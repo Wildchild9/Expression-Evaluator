@@ -97,6 +97,13 @@ public enum Expression {
         }
         return false
     }
+    var isZero: Bool {
+        if case let .n(value) = self, value.isZero {
+            return true
+        }
+        return false
+    }
+    
     public func evaluate() -> Double {
         switch self {
         case let .add(a, b): return a.evaluate() + b.evaluate()
@@ -109,22 +116,42 @@ public enum Expression {
     }
     
     public func simplified() -> Expression {
-        return _simplified().expression
+        return _simplified2() // _simplified().expression
     }
     private func _simplified() -> (expression: Expression, didChange: Bool) {
 
+        var `self` = self
+        
+        if case let .divide(a, b) = self {
+            let aSimplified = a._simplified().expression
+            let bSimplified = b._simplified().expression
+            if bSimplified.isZero || bSimplified.isNaN || aSimplified.isNaN {
+                return (.n(.nan), true)
+            }
+            self = .divide(a._simplified().expression, bSimplified)
+        } else if case let .power(a, b) = self {
+            let aSimplified = a._simplified().expression
+            let bSimplified = b._simplified().expression
+            if (aSimplified.isZero && bSimplified.isZero) || aSimplified.isNaN || bSimplified.isNaN {
+                return (.n(.nan), true)
+            }
+            self = .power(aSimplified, bSimplified)
+        }
+        
+        
         switch self {
             
         case .n: return (self, false)
 
         case .divide(_ , .n(0)), .power(.n(0), .n(0)):
-            return (.n(Double.nan), true)
-        case .add(.n(Double.nan), _), .add(_, .n(Double.nan)),
-             .subtract(.n(Double.nan), _), .subtract(_, .n(Double.nan)),
-             .multiply(.n(Double.nan), _), .multiply(_, .n(Double.nan)),
-             .divide(.n(Double.nan), _), .divide(_, .n(Double.nan)),
-             .power(.n(Double.nan), _), .power(_, .n(Double.nan)):
-            return (.n(Double.nan), true)
+            return (.n(.nan), true)
+        
+        case .add(.n(.nan), _), .add(_, .n(.nan)),
+             .subtract(.n(.nan), _), .subtract(_, .n(.nan)),
+             .multiply(.n(.nan), _), .multiply(_, .n(.nan)),
+             .divide(.n(.nan), _), .divide(_, .n(.nan)),
+             .power(.n(.nan), _), .power(_, .n(.nan)):
+            return (.n(.nan), true)
             
         case .multiply(.n(0), _), .multiply(_, .n(0)), .divide(.n(0), _), .power(.n(0), _):
             return (.n(0), true)
@@ -136,7 +163,7 @@ public enum Expression {
             return (.n(0), true)
 
         case let .multiply(t, .n(1)), let .multiply(.n(1), t),
-             let .divide  (.n(1), t),
+             let .divide  (t, .n(1)),
              let .add     (t, .n(0)), let .add     (.n(0), t),
              let .subtract(t, .n(0)),
              let .power   (t, .n(1)):
@@ -145,6 +172,10 @@ public enum Expression {
         
         case let .subtract(.n(0), .n(value)):
             return (.n(-value), true)
+            
+        case let .multiply(a, .power(b, .n(x))) where a == b,
+             let .multiply(.power(a, .n(x)), b) where a == b:
+            return (.power(a, .n(x + 1)), true)
             
         case .power(_, .n(0)), .power(.n(1), _):
             return (.n(1), true)
@@ -184,7 +215,7 @@ public enum Expression {
                     sb = sb.expression._simplified()
                 }
                 if sa.expression.isNaN || sb.expression.isNaN {
-                    return (.n(Double.nan), true)
+                    return (.n(.nan), true)
                 }
                 return (Expression.add(sa.expression, sb.expression)._simplified().expression, true)
             }
@@ -201,7 +232,7 @@ public enum Expression {
                     sb = sb.expression._simplified()
                 }
                 if sa.expression.isNaN || sb.expression.isNaN {
-                    return (.n(Double.nan), true)
+                    return (.n(.nan), true)
                 }
                 return (Expression.subtract(sa.expression, sb.expression)._simplified().expression, true)
             }
@@ -218,7 +249,7 @@ public enum Expression {
                     sb = sb.expression._simplified()
                 }
                 if sa.expression.isNaN || sb.expression.isNaN {
-                    return (.n(Double.nan), true)
+                    return (.n(.nan), true)
                 }
                 return (Expression.multiply(sa.expression, sb.expression)._simplified().expression, true)
             }
@@ -235,7 +266,7 @@ public enum Expression {
                     sb = sb.expression._simplified()
                 }
                 if sa.expression.isNaN || sb.expression.isNaN {
-                    return (.n(Double.nan), true)
+                    return (.n(.nan), true)
                 }
                 return (Expression.divide(sa.expression, sb.expression)._simplified().expression, true)
             }
@@ -252,11 +283,263 @@ public enum Expression {
                     sb = sb.expression._simplified()
                 }
                 if sa.expression.isNaN || sb.expression.isNaN {
-                    return (.n(Double.nan), true)
+                    return (.n(.nan), true)
                 }
                 return (Expression.power(sa.expression, sb.expression)._simplified().expression, true)
             }
         }
+    }
+    private func _simplified2() -> Expression {
+        switch self {
+        // Number
+        case .n:
+            return self
+            
+        // Addition
+        case let .add(lhs, rhs):
+            
+            let lhsSimplified = lhs._simplified2()
+            let rhsSimplified = rhs._simplified2()
+            
+            switch (lhsSimplified, rhsSimplified) {
+            // NaN + x = NaN
+            case let (x, _) where x.isNaN,
+                 let (_, x) where x.isNaN:
+                return .n(.nan)
+                
+            // 0 + x = x
+            case let (x, y) where y.isZero,
+                 let (y, x) where y.isZero:
+                return x
+                
+            // x + (-x) = 0
+            case let (.n(x), .n(y)) where x == -y:
+                return .n(0)
+                
+            // x + (y - x) = y
+            case let (x1, .subtract(y, x2)) where x1 == x2,
+                 let (.subtract(y, x1), x2) where x1 == x2:
+                return y
+                
+            // a(x) + b(x) = (a + b)(x)
+            case let (.multiply(a, x1), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
+                return Expression.multiply(.add(a, b), x1)._simplified2()
+                
+            // no simplification
+            case let (a, b):
+                return .add(a, b)
+            }
+            
+        // Subtraction
+        case let .subtract(lhs, rhs):
+            
+            let lhsSimplified = lhs._simplified2()
+            let rhsSimplified = rhs._simplified2()
+            
+            switch (lhsSimplified, rhsSimplified) {
+            // NaN - x = NaN
+            case let (x, _) where x.isNaN,
+                 let (_, x) where x.isNaN:
+                return .n(.nan)
+                
+            // x - 0 = x
+            case let (x, y) where y.isZero:
+                return x
+                
+            // x + (-x) = 0
+            case let (x, y) where x == y:
+                return .n(0)
+                
+            // 0 - x = -x
+            case let (x, .n(y)) where x.isZero:
+                return .n(-y)
+                
+            // x - (x + y) = -y
+            // (x - y) - x = -y
+            case let (x1, .add(x2, y))      where x1 == x2,
+                 let (.subtract(x1, y), x2) where x1 == x2:
+                if case let .n(value) = y { return .n(-value) }
+                return .subtract(.n(0), y)
+               
+            // (x + y) - x = y
+            // x - (x - y) = y
+            case let (.add(x1, y), x2)      where x1 == x2,
+                 let (x1, .subtract(x2, y)) where x1 == x2:
+                return y
+                
+            // a(x) - b(x) = (a - b)(x)
+            case let (.multiply(a, x1), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
+                return Expression.multiply(.subtract(a, b), x1)._simplified2()
+                
+            // no simplification
+            case let (a, b):
+                return .subtract(a, b)
+            }
+            
+        // Multiplication
+        case let .multiply(lhs, rhs):
+            
+            let lhsSimplified = lhs._simplified2()
+            let rhsSimplified = rhs._simplified2()
+            
+            switch (lhsSimplified, rhsSimplified) {
+            // NaN * x = NaN
+            case let (x, _) where x.isNaN,
+                 let (_, x) where x.isNaN:
+                return .n(.nan)
+                
+            // 0x = 0
+            case let (x, _) where x.isZero,
+                 let (_, x) where x.isZero:
+                return .n(0)
+                
+            // 1x = x
+            case let (x, 1), let (1, x):
+                return x
+                
+            // -1x = x
+            case let (.n(x), -1), let (-1, .n(x)):
+                return .n(-x)
+                
+            // x * x = x ^ 2
+            case let (x, y) where x == y:
+                return .power(x, .n(2))
+                
+            // x * (y / x) = y
+            case let (x1, .divide(y, x2)) where x1 == x2,
+                 let (.divide(y, x1), x2) where x1 == x2:
+                return y
+                
+            // x * x ^ y = x ^ (y + 1)
+            case let (x1, .power(x2, y)) where x1 == x2,
+                 let (.power(x1, y), x2) where x1 == x2:
+                if case let .n(value) = y {
+                    return Expression.power(x1, .n(value + 1))._simplified2()
+                }
+                return Expression.power(x1, .add(.n(1), y))._simplified2()
+                
+            // (1 / x) * y = y / x
+            case let (.divide(1, den), num),
+                 let (num, .divide(1, den)):
+                return Expression.divide(num, den)._simplified2()
+                
+            // (-1 / x) * y = y / x
+            case let (.divide(-1, den), num),
+                 let (num, .divide(-1, den)):
+                if case let .n(x) = num {
+                    return Expression.divide(.n(-x), den)._simplified2()
+                } else if case let .n(y) = den {
+                    return Expression.divide(num, .n(-y))._simplified2()
+                }
+                return Expression.divide(.subtract(.n(0), num), den)._simplified2()
+
+            // (x / y) * (y / x) = 1
+            case let (.divide(x1, y1), .divide(x2, y2)) where x1 == x2 && y1 == y2:
+                 return .n(1)
+                
+            // no simplification
+            case let (a, b):
+                return .multiply(a, b)
+            }
+            
+        // Division
+        case let .divide(lhs, rhs):
+            
+            let lhsSimplified = lhs._simplified2()
+            let rhsSimplified = rhs._simplified2()
+            
+            switch (lhsSimplified, rhsSimplified) {
+            // NaN / x = NaN
+            // x / 0 = NaN
+            case let (x, _) where x.isNaN,
+                 let (_, x) where x.isNaN || x.isZero:
+                return .n(.nan)
+              
+            // 0 / x = x
+            case let (x, _) where x.isZero:
+                return .n(0)
+                
+            // x / 1 = x
+            case let (x, 1):
+                return x
+                
+            // x /- 1 = x
+            case let (.n(x), -1):
+                return .n(-x)
+                
+            // x / x = 1
+            case let (x, y) where x == y:
+                return .n(1)
+                
+            // (x * y) / x = y
+            case let (.multiply(x1, y), x2) where x1 == x2,
+                 let (.multiply(y, x1), x2) where x1 == x2:
+                return y
+                
+            // x / (x * y) = 1 / y
+            case let (x1, .multiply(x2, y)) where x1 == x2,
+                 let (x1, .multiply(y, x2)) where x1 == x2:
+                return .divide(.n(1), y)
+                
+            // no simplification
+            case let (a, b):
+                return .divide(a, b)
+            }
+            
+        case let .power(lhs, rhs):
+            
+            let lhsSimplified = lhs._simplified2()
+            let rhsSimplified = rhs._simplified2()
+            
+            switch (lhsSimplified, rhsSimplified) {
+            // NaN ^ x = NaN
+            case let (x, _) where x.isNaN,
+                 let (_, x) where x.isNaN:
+                return .n(.nan)
+                
+            // 0 ^ 0
+            case let (x, y) where x.isZero && y.isZero:
+                return .n(.nan)
+                
+            // x ^ 0 = 1
+            case let (_, x) where x.isZero:
+                return .n(1)
+                
+            // 0 ^ x = 0
+            case let (x, _) where x.isZero:
+                return .n(0)
+                
+            // x ^ 1 = x
+            case let (x, 1):
+                return x
+                
+            // (x / y) ^ -e = (y / x) ^ e
+            case let (.divide(x, y), .n(e)) where e < 0:
+                return Expression.power(.divide(y, x), .n(-e))._simplified2()
+                
+            // x ^ -e = 1 / x ^ e
+            case let (x, .n(e)) where e < 0:
+                return Expression.divide(.n(1), .power(x, .n(-e)))._simplified2()
+                
+            // no simplification
+            case let (a, b):
+                return .power(a, b)
+            }
+        }
+    }
+}
+public extension Expression {
+    public static func ~= (lhs: Double, rhs: Expression) -> Bool {
+        if case let .n(x) = rhs, x == lhs {
+            return true
+        }
+        return false
     }
 }
 

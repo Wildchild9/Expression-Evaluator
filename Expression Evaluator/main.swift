@@ -38,6 +38,9 @@ print(equation4)
 print(expression4)
 print()
 
+measure(label: "Simplification", tests: 10000) {
+    _ = expression4.simplified()
+}
 expression4 = expression4.simplified()
 print(expression4)
 
