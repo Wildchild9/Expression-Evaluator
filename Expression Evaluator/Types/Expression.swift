@@ -116,10 +116,10 @@ public enum Expression {
     }
     
     public func simplified() -> Expression {
-        return _simplified2()
+        return _simplified()
     }
     
-    private func _simplified2() -> Expression {
+    private func _simplified() -> Expression {
         switch self {
         // Number
         case .n:
@@ -128,8 +128,8 @@ public enum Expression {
         // Addition
         case let .add(lhs, rhs):
             
-            let lhsSimplified = lhs._simplified2()
-            let rhsSimplified = rhs._simplified2()
+            let lhsSimplified = lhs._simplified()
+            let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
             // NaN + x = NaN
@@ -156,7 +156,7 @@ public enum Expression {
                  let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
-                return Expression.multiply(.add(a, b), x1)._simplified2()
+                return Expression.multiply(.add(a, b), x1)._simplified()
                 
             // no simplification
             case let (a, b):
@@ -166,8 +166,8 @@ public enum Expression {
         // Subtraction
         case let .subtract(lhs, rhs):
             
-            let lhsSimplified = lhs._simplified2()
-            let rhsSimplified = rhs._simplified2()
+            let lhsSimplified = lhs._simplified()
+            let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
             // NaN - x = NaN
@@ -205,7 +205,7 @@ public enum Expression {
                  let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
-                return Expression.multiply(.subtract(a, b), x1)._simplified2()
+                return Expression.multiply(.subtract(a, b), x1)._simplified()
                 
             // no simplification
             case let (a, b):
@@ -215,8 +215,8 @@ public enum Expression {
         // Multiplication
         case let .multiply(lhs, rhs):
             
-            let lhsSimplified = lhs._simplified2()
-            let rhsSimplified = rhs._simplified2()
+            let lhsSimplified = lhs._simplified()
+            let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
             // NaN * x = NaN
@@ -250,24 +250,24 @@ public enum Expression {
             case let (x1, .power(x2, y)) where x1 == x2,
                  let (.power(x1, y), x2) where x1 == x2:
                 if case let .n(value) = y {
-                    return Expression.power(x1, .n(value + 1))._simplified2()
+                    return Expression.power(x1, .n(value + 1))._simplified()
                 }
-                return Expression.power(x1, .add(.n(1), y))._simplified2()
+                return Expression.power(x1, .add(.n(1), y))._simplified()
                 
             // (1 / x) * y = y / x
             case let (.divide(1, den), num),
                  let (num, .divide(1, den)):
-                return Expression.divide(num, den)._simplified2()
+                return Expression.divide(num, den)._simplified()
                 
             // (-1 / x) * y = y / x
             case let (.divide(-1, den), num),
                  let (num, .divide(-1, den)):
                 if case let .n(x) = num {
-                    return Expression.divide(.n(-x), den)._simplified2()
+                    return Expression.divide(.n(-x), den)._simplified()
                 } else if case let .n(y) = den {
-                    return Expression.divide(num, .n(-y))._simplified2()
+                    return Expression.divide(num, .n(-y))._simplified()
                 }
-                return Expression.divide(.subtract(.n(0), num), den)._simplified2()
+                return Expression.divide(.subtract(.n(0), num), den)._simplified()
 
             // (x / y) * (y / x) = 1
             case let (.divide(x1, y1), .divide(x2, y2)) where x1 == x2 && y1 == y2:
@@ -281,8 +281,8 @@ public enum Expression {
         // Division
         case let .divide(lhs, rhs):
             
-            let lhsSimplified = lhs._simplified2()
-            let rhsSimplified = rhs._simplified2()
+            let lhsSimplified = lhs._simplified()
+            let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
             // NaN / x = NaN
@@ -324,8 +324,8 @@ public enum Expression {
             
         case let .power(lhs, rhs):
             
-            let lhsSimplified = lhs._simplified2()
-            let rhsSimplified = rhs._simplified2()
+            let lhsSimplified = lhs._simplified()
+            let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
             // NaN ^ x = NaN
@@ -351,11 +351,11 @@ public enum Expression {
                 
             // (x / y) ^ -e = (y / x) ^ e
             case let (.divide(x, y), .n(e)) where e < 0:
-                return Expression.power(.divide(y, x), .n(-e))._simplified2()
+                return Expression.power(.divide(y, x), .n(-e))._simplified()
                 
             // x ^ -e = 1 / x ^ e
             case let (x, .n(e)) where e < 0:
-                return Expression.divide(.n(1), .power(x, .n(-e)))._simplified2()
+                return Expression.divide(.n(1), .power(x, .n(-e)))._simplified()
                 
             // no simplification
             case let (a, b):
