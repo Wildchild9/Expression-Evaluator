@@ -9,6 +9,7 @@
 import Foundation
 
 
+var i = 0
 
 
 public enum Expression {
@@ -20,9 +21,63 @@ public enum Expression {
     case n(Double)
     
     
-    public init (_ string: String) {
+//    func containsTermOnTopLevel(_ t: (Expression), matchNumber: Bool = true) -> Bool {
+//        switch self {
+//        case let .add(a, b)      where a == t || b == t,
+//             let .subtract(a, b) where a == t || b == t,
+//             let .multiply(a, b) where a == t || b == t,
+//             let .divide(a, b)   where a == t || b == t,
+//             let .power(a, b)    where a == t || b == t:
+//            return true
+//        case .n where matchNumber && self == t:
+//            return true
+//        default:
+//            return false
+//        }
+//    }
+   
+    func contains(where predicate: (Expression) -> Bool) -> Bool {
+        guard !predicate(self) else { return true }
+        
+        switch self {
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b):
+            if predicate(a) || predicate(b) {
+                return true
+            } else {
+                return a.contains(where: predicate) || b.contains(where: predicate)
+            }
+        default: return false
+        }
+    }
+    func contains(_ expression: Expression) -> Bool {
+        guard self != expression else { return true }
+        
+        switch self {
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b):
+            if a == expression || b == expression {
+                return true
+            } else {
+                return a.contains(expression) || b.contains(expression)
+            }
+        default: return false
+        }
+    }
+    
+    
+    public init (_ string: String, simplify: Bool = true) {
         let eq = _Expression.from(string)
         self.init(eq)
+        if simplify {
+            self = self.simplified()
+        }
     }
     private init (_ exp: _Expression) {
         switch exp {
@@ -36,6 +91,12 @@ public enum Expression {
         }
     }
     
+    var isNaN: Bool {
+        if case let .n(value) = self, value.isNaN {
+            return true
+        }
+        return false
+    }
     public func evaluate() -> Double {
         switch self {
         case let .add(a, b): return a.evaluate() + b.evaluate()
@@ -44,6 +105,171 @@ public enum Expression {
         case let .divide(a, b): return a.evaluate() / b.evaluate()
         case let .power(a, b): return pow(a.evaluate(), b.evaluate())
         case let .n(a): return a
+        }
+    }
+    
+    public func simplified() -> Expression {
+        return _simplified().expression
+    }
+    private func _simplified() -> (expression: Expression, didChange: Bool) {
+
+        switch self {
+            
+        case .n: return (self, false)
+
+        case .divide(_ , .n(0)), .power(.n(0), .n(0)):
+            return (.n(Double.nan), true)
+        case .add(.n(Double.nan), _), .add(_, .n(Double.nan)),
+             .subtract(.n(Double.nan), _), .subtract(_, .n(Double.nan)),
+             .multiply(.n(Double.nan), _), .multiply(_, .n(Double.nan)),
+             .divide(.n(Double.nan), _), .divide(_, .n(Double.nan)),
+             .power(.n(Double.nan), _), .power(_, .n(Double.nan)):
+            return (.n(Double.nan), true)
+            
+        case .multiply(.n(0), _), .multiply(_, .n(0)), .divide(.n(0), _), .power(.n(0), _):
+            return (.n(0), true)
+
+        case let .subtract(a, b) where a == b:
+            return (.n(0), true)
+
+        case let .add(.n(a), .n(b)) where a == -b:
+            return (.n(0), true)
+
+        case let .multiply(t, .n(1)), let .multiply(.n(1), t),
+             let .divide  (.n(1), t),
+             let .add     (t, .n(0)), let .add     (.n(0), t),
+             let .subtract(t, .n(0)),
+             let .power   (t, .n(1)):
+            return (t._simplified().expression, true)
+            
+        
+        case let .subtract(.n(0), .n(value)):
+            return (.n(-value), true)
+            
+        case .power(_, .n(0)), .power(.n(1), _):
+            return (.n(1), true)
+            
+        case let .divide(a, b) where a == b && b._simplified().expression != .n(0):
+            return (.n(1), true)
+
+        case let .multiply(a, .divide(x, b)) where a == b,
+             let .multiply(.divide(a, x), b) where a == b,
+             let .divide(.multiply(a, x), b) where a == b,
+             let .divide(.multiply(x, a), b) where a == b:
+            return (x._simplified().expression, true)
+            
+        case let .add(.multiply(a1, b1), .multiply(a2, b2)) where b1 == b2,
+             let .add(.multiply(b1, a1), .multiply(b2, a2)) where b1 == b2:
+            return (Expression.multiply(.add(a1, a2), b1)._simplified().expression, true)
+            
+        case let .subtract(.multiply(a1, b1), .multiply(a2, b2)) where b1 == b2,
+             let .subtract(.multiply(b1, a1), .multiply(b2, a2)) where b1 == b2:
+            return (Expression.multiply(.subtract(a1, a2), b1)._simplified().expression, true)
+            
+        case let .divide(a, .multiply(x, b)) where a == b,
+             let .divide(a, .multiply(b, x)) where a == b:
+            return (Expression.divide(.n(1), x)._simplified().expression, true)
+
+        // Default returns
+        case let .add(a, b):
+            var sa = a._simplified()
+            var sb = b._simplified()
+            if !sa.didChange && !sb.didChange {
+                return (.add(a, b), false)
+            } else {
+                while sa.didChange {
+                    sa = sa.expression._simplified()
+                }
+                while sb.didChange {
+                    sb = sb.expression._simplified()
+                }
+                if sa.expression.isNaN || sb.expression.isNaN {
+                    return (.n(Double.nan), true)
+                }
+                return (Expression.add(sa.expression, sb.expression)._simplified().expression, true)
+            }
+        case let .subtract(a, b):
+            var sa = a._simplified()
+            var sb = b._simplified()
+            if !sa.didChange && !sb.didChange {
+                return (.subtract(a, b), false)
+            } else {
+                while sa.didChange {
+                    sa = sa.expression._simplified()
+                }
+                while sb.didChange {
+                    sb = sb.expression._simplified()
+                }
+                if sa.expression.isNaN || sb.expression.isNaN {
+                    return (.n(Double.nan), true)
+                }
+                return (Expression.subtract(sa.expression, sb.expression)._simplified().expression, true)
+            }
+        case let .multiply(a, b):
+            var sa = a._simplified()
+            var sb = b._simplified()
+            if !sa.didChange && !sb.didChange {
+                return (.multiply(a, b), false)
+            } else {
+                while sa.didChange {
+                    sa = sa.expression._simplified()
+                }
+                while sb.didChange {
+                    sb = sb.expression._simplified()
+                }
+                if sa.expression.isNaN || sb.expression.isNaN {
+                    return (.n(Double.nan), true)
+                }
+                return (Expression.multiply(sa.expression, sb.expression)._simplified().expression, true)
+            }
+        case let .divide(a, b):
+            var sa = a._simplified()
+            var sb = b._simplified()
+            if !sa.didChange && !sb.didChange {
+                return (.divide(a, b), false)
+            } else {
+                while sa.didChange {
+                    sa = sa.expression._simplified()
+                }
+                while sb.didChange {
+                    sb = sb.expression._simplified()
+                }
+                if sa.expression.isNaN || sb.expression.isNaN {
+                    return (.n(Double.nan), true)
+                }
+                return (Expression.divide(sa.expression, sb.expression)._simplified().expression, true)
+            }
+        case let .power(a, b):
+            var sa = a._simplified()
+            var sb = b._simplified()
+            if !sa.didChange && !sb.didChange {
+                return (.power(a, b), false)
+            } else {
+                while sa.didChange {
+                    sa = sa.expression._simplified()
+                }
+                while sb.didChange {
+                    sb = sb.expression._simplified()
+                }
+                if sa.expression.isNaN || sb.expression.isNaN {
+                    return (.n(Double.nan), true)
+                }
+                return (Expression.power(sa.expression, sb.expression)._simplified().expression, true)
+            }
+        }
+    }
+}
+
+extension Expression: Equatable {
+    public static func == (lhs: Expression, rhs: Expression) -> Bool {
+        switch (lhs, rhs) {
+        case let (.add(a1, b1), .add(a2, b2)) where a1 == a2 && b1 == b2: return true
+        case let (.subtract(a1, b1), .subtract(a2, b2)) where a1 == a2 && b1 == b2: return true
+        case let (.multiply(a1, b1), .multiply(a2, b2)) where a1 == a2 && b1 == b2: return true
+        case let (.divide(a1, b1), .divide(a2, b2)) where a1 == a2 && b1 == b2: return true
+        case let (.power(a1, b1), .power(a2, b2)) where a1 == a2 && b1 == b2: return true
+        case let (.n(a), .n(b)): return a == b
+        default: return false
         }
     }
 }
@@ -305,22 +531,3 @@ extension _Expression: CustomStringConvertible {
     }
 }
 
-
-fileprivate extension Array where Element == NSTextCheckingResult {
-    fileprivate func captureGroups(in str: String) -> [(range: Range<String.Index>, captureGroups: [String])] {
-        var captureGroups = [(range: Range<String.Index>, captureGroups: [String])]()
-        captureGroups.reserveCapacity(count)
-        
-        for match in self {
-            var captures = [String]()
-            captures.reserveCapacity(match.numberOfRanges - 1)
-            for captureGroup in 1..<match.numberOfRanges where match.range(at: captureGroup).lowerBound != NSNotFound {
-                let range = match.range(at: captureGroup)
-                captures.append(String(str[Range(range, in: str)!]))
-            }
-            
-            captureGroups.append((range: Range(match.range, in: str)!, captureGroups: captures))
-        }
-        return captureGroups
-    }
-}

@@ -52,3 +52,9 @@ public func applyFormatting<T: StringProtocol>(to equation: T) -> String {
     return str
     
 }
+
+public extension StringProtocol {
+    public func formatEquation() -> String {
+        return applyFormatting(to: self)
+    }
+}
