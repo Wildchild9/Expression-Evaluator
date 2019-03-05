@@ -8,7 +8,12 @@
 
 import Foundation
 
-
+precedencegroup ExponentiationPrecedence {
+    higherThan: MultiplicationPrecedence
+    lowerThan: BitwiseShiftPrecedence
+    associativity: right
+}
+infix operator ^: ExponentiationPrecedence
 
 public enum ExactExpression {
     indirect case add(ExactExpression, ExactExpression)
@@ -41,27 +46,299 @@ public enum ExactExpression {
         return false
     }
 
-    
+    // Initializer
     public init (_ string: String, simplify: Bool = true) {
-        let eq = _ExactExpression(string)
-        self.init(eq)
-        
+
+        let formattedExpression = ExactExpression.formatExpression(string)
+        self = ExactExpression.createExpression(from: formattedExpression)
         if simplify {
             self = self.simplified()
         }
     }
-    private init (_ exp: _ExactExpression) {
-        switch exp {
-        case let .add(a, b): self = .add(ExactExpression(a), ExactExpression(b))
-        case let .subtract(a, b): self = .subtract(ExactExpression(a), ExactExpression(b))
-        case let .multiply(a, b): self = .multiply(ExactExpression(a), ExactExpression(b))
-        case let .divide(a, b): self = .divide(ExactExpression(a), ExactExpression(b))
-        case let .power(a, b): self = .power(ExactExpression(a), ExactExpression(b))
-        case let .log(a, b): self = .log(ExactExpression(a), ExactExpression(b))
-        case let .root(a, b): self = .root(ExactExpression(a), ExactExpression(b))
-        case let .n(a): self = .n(a)
-        default: fatalError("Cannot convert equation")
+    
+    // Operators
+    public static func + (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return .add(lhs, rhs)
+    }
+    public static func - (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return .subtract(lhs, rhs)
+    }
+    public static func * (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return .multiply(lhs, rhs)
+    }
+    public static func / (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return .divide(lhs, rhs)
+    }
+    public static func ^ (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return .power(lhs, rhs)
+    }
+    
+    public static prefix func - (expression: ExactExpression) -> ExactExpression {
+        if case let .n(x) = expression {
+            return .n(-x)
         }
+        return .subtract(.n(0), expression)
+    }
+    
+    
+    
+    
+    // Expression formatting, parsing, and creation
+    private static func createExpression<T: StringProtocol>(from str: T) -> ExactExpression {
+        guard !str.isEmpty else { fatalError() }
+        
+        var parentheticLevel = 0
+        var angledBracketLevel = 0
+        var expressionArr = [Either<ExactExpression, Operator>]()
+        var currentTermIndex = str.startIndex
+        
+        for (i, c) in zip(str.indices, str) {
+            switch (parentheticLevel, angledBracketLevel, c) {
+            case (_, _, "<"):
+                angledBracketLevel += 1
+                
+            case (_, _, ">"):
+                angledBracketLevel -= 1
+                
+            case (_, _, "("):
+                parentheticLevel += 1
+                
+            case (_, _, ")"):
+                parentheticLevel -= 1
+                
+            case (0, 0, " "):
+                let term = identifyTerm(from: str[currentTermIndex..<i])
+                expressionArr.append(term)
+                currentTermIndex = str.index(after: i)
+                continue
+                
+            default: break
+            }
+        }
+        
+        // Add lest term to expression array
+        let term = identifyTerm(from: str[currentTermIndex..<str.endIndex])
+        expressionArr.append(term)
+        
+        // Combine terms with operators
+        let operatorGroups = Operator.groupedByPrecedence
+        
+        for (operators, associativity) in operatorGroups {
+            guard expressionArr.count > 1 else {
+                guard case let .left(expression) = expressionArr.first! else {
+                    fatalError("Error creating equation")
+                }
+                return expression
+            }
+            reduceExpressionArray(&expressionArr, with: operators, associativity: associativity)
+        }
+        
+        guard expressionArr.count == 1, case let .left(finalExpression) = expressionArr[0] else {
+            fatalError("Error creating equation")
+        }
+        
+        return finalExpression
+    }
+    private static func identifyTerm<T: StringProtocol>(from term: T) -> Either<ExactExpression, Operator> {
+        
+        let term = String(term)
+        
+        
+        switch term {
+        // Operator
+        case let s where Operator.allOperators.contains(s):
+            guard let op = Operator(s) else {
+                fatalError("Invalid format for expression")
+            }
+            
+            return .right(op)
+            
+        // Integer
+        case let s where s.allSatisfy({ "0123456789".contains($0) }):
+            guard let n = Int(s) else {
+                fatalError("Invalid format for expression")
+            }
+            return .left(.n(n))
+            
+        // nth root
+        case let s where s.hasPrefix("root"):
+            let rootRegex = try! NSRegularExpression(pattern: "^root(?:([\\+-]?[2-9]\\d*)|\\<(.+)\\>)\\((.+)\\)$")
+            
+            guard let match = rootRegex.firstMatch(in: term, range: term.nsRange) else {
+                fatalError("Invalid format for expression")
+            }
+            let captureGroups = match.captureGroups(in: term)
+            
+            let n = captureGroups[0]
+            let parentheticContents = captureGroups[1]
+            
+            return .left(.root(createExpression(from: n), createExpression(from: parentheticContents)))
+            
+        // Square root
+        case let s where s.hasPrefix("sqrt"):
+            let sqrtRegex = try! NSRegularExpression(pattern: "^sqrt\\((.+)\\)$")
+            guard let match = sqrtRegex.firstMatch(in: term, range: NSRange(term.startIndex..., in: term)) else {
+                fatalError("Invalid format for expression")
+            }
+            let captureGroups = match.captureGroups(in: term)
+            
+            let parentheticContents = captureGroups[0]
+            return .left(.root(.n(2), createExpression(from: parentheticContents)))
+            
+        // Cube root
+        case let s where s.hasPrefix("cbrt"):
+            let cbrtRegex = try! NSRegularExpression(pattern: "^cbrt\\((.+)\\)$")
+            guard let match = cbrtRegex.firstMatch(in: term, range: term.nsRange) else {
+                fatalError("Invalid format for expression")
+            }
+            let captureGroups = match.captureGroups(in: term)
+            
+            let parentheticContents = captureGroups[0]
+            return .left(.root(.n(3), createExpression(from: parentheticContents)))
+            
+        // Logarithm
+        case let s where s.hasPrefix("log"):
+            
+            let rootRegex = try! NSRegularExpression(pattern: "^log(?:(0*[2-9]\\d*)|\\<(.+)\\>)?\\((.+)\\)$")
+            
+            guard let match = rootRegex.firstMatch(in: term, range: term.nsRange) else {
+                fatalError("Invalid format for expression")
+            }
+            let captureGroups = match.captureGroups(in: term)
+            
+            let base = captureGroups.count == 2 ? captureGroups[0] : "10"
+            let parentheticContents = captureGroups.last!
+            
+            return .left(.log(createExpression(from: base), createExpression(from: parentheticContents)))
+            
+        // Parentheses
+        case let s where s.hasPrefix("(") && s.hasSuffix(")"):
+            return .left(createExpression(from: s[s.index(after: s.startIndex)..<s.index(before: s.endIndex)]))
+            
+        // Invalid term
+        default:
+            break
+        }
+        
+        fatalError("Invalid format for expression")
+    }
+    private static func reduceExpressionArray(_ arr: inout [Either<ExactExpression, Operator>], with operations: [Operator], associativity: Operator.Associativity) {
+        
+        guard !operations.isEmpty else { return }
+        
+        let operators: [(index: Int, `operator`: Operator)] = Array(arr.lazy
+            .filter {
+                if case .right(_) = $0 { return true }
+                else { return false }
+            }
+            .enumerated()
+            .map {
+                guard case let .right(op) = $0.element else { fatalError() }
+                return (index: $0.offset * 2 + 1, operator: op)
+            }
+        )
+        
+        if associativity == .left {
+            var combinationOffset = 0
+            
+            for (index, `operator`) in operators where operations.contains(`operator`) {
+                guard case let .left(a) = arr[index - 1 - combinationOffset],
+                      case let .left(b) = arr[index + 1 - combinationOffset] else {
+                    fatalError("Error creating expression")
+                }
+                
+                
+                let replacementOperation = ExactExpression.performOperation(between: a, and: b, with: `operator`)
+                
+                arr[(index - 1 - combinationOffset)...(index + 1 - combinationOffset)] = [.left(replacementOperation)]
+                combinationOffset += 2
+            }
+        } else if associativity == .right {
+            for (index, `operator`) in operators.reversed() where operations.contains(`operator`) {
+                guard case let .left(a) = arr[index - 1],
+                      case let .left(b) = arr[index + 1] else {
+                    fatalError("Error creating expression")
+                }
+                
+                let replacementOperation = ExactExpression.performOperation(between: a, and: b, with: `operator`)
+                
+                arr[(index - 1)...(index + 1)] = [.left(replacementOperation)]
+            }
+        }
+    }
+    private static func performOperation(between a: ExactExpression, and b: ExactExpression, with operation: Operator) -> ExactExpression {
+        switch operation {
+        case .addition: return .add(a, b)
+        case .subtraction: return .subtract(a, b)
+        case .multiplication: return .multiply(a, b)
+        case .division: return .divide(a, b)
+        case .exponentiation: return .power(a, b)
+        }
+    }
+    private static func formatExpression<T: StringProtocol>(_ string: T) -> String {
+        
+        let exactNumberRegex = "[-\\+]?\\d+"
+        //let operators = Operator.allOperatorsString
+        let functions = ["sqrt", "cbrt", "root", "log"]
+        let anyOperator = "(?:" + Operator.allOperators.map { $0.rEsc() }.joined(separator: "|") + ")"
+        let anyFunction = "(?:" + functions.map { $0.rEsc() }.joined(separator: "|") + ")"
+        
+        var str = String(string).trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Replace other braces with parentheses
+        do {
+            let braceDict: [Character: String] = ["{" : "(", "[" : "(", "]" : ")", "}" : ")"]
+            str = str.reduce("") { $0 + (braceDict[$1] ?? "\($1)") }
+        }
+        
+        // Space binary operators
+        do {
+            str = str.replacingOccurrences(of: rOr(exactNumberRegex, "\\)") + anyOperator.rGroup() + rOr(exactNumberRegex, "(?:\\(|" + anyFunction + ")", group: .positiveLookbehind), with: "$1 $2 ", options: .regularExpression)
+            
+            
+            str = str.replacingOccurrences(of: "(?<=[^\\s\\d])" + anyOperator.rGroup() + "(?=[^\\s\\d])", with: "$1 $2 $3", options: .regularExpression)
+            
+        }
+        
+        // Replace parenthetic multiplication with star operator
+        do {
+            let parentheticMultiplicationPattern = rOr("(?<!log|root)(\(exactNumberRegex))\\s*(?=\\(|\(anyFunction)", "(\\))\\s*(?=\(exactNumberRegex))", "(\\))\\s*(?=\\(|\(anyFunction)", group: .none)
+            
+            str = str.replacingOccurrences(of: parentheticMultiplicationPattern, with: "$1$2$3 * ", options: .regularExpression)
+            
+            str = str.replacingOccurrences(of: ")(", with: ") * (")
+        }
+        // Replace adjacent multiplication with star operator
+        do {
+            let adjacentMultiplicationPattern = exactNumberRegex.rGroup() + "(?=\(anyFunction))"
+            
+            str = str.replacingOccurrences(of: adjacentMultiplicationPattern, with: "$1 * ", options: .regularExpression)
+            
+        }
+        
+        // Fix prefix negative operator
+        do {
+            if let firstCharacter = str.first, firstCharacter == "-" {
+                str.replaceSubrange(str.startIndex...str.startIndex, with: "0 - ")
+            }
+            str = str.replacingOccurrences(of: "-\\(", with: "0 - (", options: .regularExpression)
+        }
+        
+        // Remove prefix positive operator
+        do {
+            
+            if let firstCharacter = str.first, firstCharacter == "+" {
+                str.removeFirst()
+            }
+            
+            str = str.replacingOccurrences(of: "(?<=[\\s\\(])\\+(?=[^\\)\\s])", with: "", options: .regularExpression)
+        }
+        
+        str = str.replacingOccurrences(of: "\\([\\s\\)\\(]*\\)", with: "")
+        
+        
+        return str
+        
     }
     
     
@@ -699,6 +976,7 @@ public extension ExactExpression {
     }
 }
 
+
 extension ExactExpression: Equatable {
     public static func == (lhs: ExactExpression, rhs: ExactExpression) -> Bool {
         switch (lhs, rhs) {
@@ -785,358 +1063,3 @@ extension ExactExpression: CustomStringConvertible {
         }
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-private enum _ExactExpression {
-    indirect case add(_ExactExpression, _ExactExpression)
-    indirect case subtract(_ExactExpression, _ExactExpression)
-    indirect case multiply(_ExactExpression, _ExactExpression)
-    indirect case divide(_ExactExpression, _ExactExpression)
-    indirect case power(_ExactExpression, _ExactExpression)
-    indirect case log(_ExactExpression, _ExactExpression)
-    indirect case root(_ExactExpression, _ExactExpression)
-    case `operator`(Operator)
-    case n(Int)
-    
-    public init <T: StringProtocol>(_ string: T) {
-        let formattedExpression = _ExactExpression.formatExpression(string)
-        self = _ExactExpression.createExpression(from: formattedExpression)
-    }
-    
-    private static func createExpression<T: StringProtocol>(from str: T) -> _ExactExpression {
-        guard !str.isEmpty else { fatalError() }
-        
-        var parentheticLevel = 0
-        var angledBracketLevel = 0
-        var expressionArr = [_ExactExpression]()
-        var currentTermIndex = str.startIndex
-        
-        for (i, c) in zip(str.indices, str) {
-            switch (parentheticLevel, angledBracketLevel, c) {
-            case (_, _, "<"):
-                angledBracketLevel += 1
-                
-            case (_, _, ">"):
-                angledBracketLevel -= 1
-                
-            case (_, _, "("):
-                parentheticLevel += 1
-                
-            case (_, _, ")"):
-                parentheticLevel -= 1
-
-            case (0, 0, " "):
-                let term = identifyTerm(from: str[currentTermIndex..<i])
-                expressionArr.append(term)
-                currentTermIndex = str.index(after: i)
-                continue
-                
-            default: break
-            }
-        }
-        
-        // Add lest term to expression array
-        let term = identifyTerm(from: str[currentTermIndex..<str.endIndex])
-        expressionArr.append(term)
-        
-        // Combine terms with operators
-        let operatorGroups = Operator.groupedByPrecedence
-        
-        for (operators, associativity) in operatorGroups {
-            guard expressionArr.count > 1 else { return expressionArr.first! }
-            reduceExpressionArray(&expressionArr, with: operators, associativity: associativity)
-        }
-        
-        guard expressionArr.count == 1 else { fatalError("Error creating equation") }
-        
-        return expressionArr[0]
-    }
-    private static func identifyTerm<T: StringProtocol>(from term: T) -> _ExactExpression {
-        
-        let term = String(term)
-        
-        switch term {
-        // Operator
-        case let s where Operator.allOperators.contains(s):
-            guard let op = Operator(s) else {
-                fatalError("Invalid format for expression")
-            }
-            return .operator(op)
-            
-        // Integer
-        case let s where s.allSatisfy({ "0123456789".contains($0) }):
-            guard let n = Int(s) else {
-                fatalError("Invalid format for expression")
-            }
-            return .n(n)
-            
-        // nth root
-        case let s where s.hasPrefix("root"):
-            let rootRegex = try! NSRegularExpression(pattern: "^root(?:([\\+-]?[2-9]\\d*)|\\<(.+)\\>)\\((.+)\\)$")
-            
-            guard let match = rootRegex.firstMatch(in: term, range: term.nsRange) else {
-                fatalError("Invalid format for expression")
-            }
-            let captureGroups = match.captureGroups(in: term)
-            
-            let n = captureGroups[0]
-            let parentheticContents = captureGroups[1]
-            
-            return .root(createExpression(from: n), createExpression(from: parentheticContents))
-            
-        // Square root
-        case let s where s.hasPrefix("sqrt"):
-            let sqrtRegex = try! NSRegularExpression(pattern: "^sqrt\\((.+)\\)$")
-            guard let match = sqrtRegex.firstMatch(in: term, range: NSRange(term.startIndex..., in: term)) else {
-                fatalError("Invalid format for expression")
-            }
-            let captureGroups = match.captureGroups(in: term)
-            
-            let parentheticContents = captureGroups[0]
-            return .root(.n(2), createExpression(from: parentheticContents))
-            
-        // Cube root
-        case let s where s.hasPrefix("cbrt"):
-            let cbrtRegex = try! NSRegularExpression(pattern: "^cbrt\\((.+)\\)$")
-            guard let match = cbrtRegex.firstMatch(in: term, range: term.nsRange) else {
-                fatalError("Invalid format for expression")
-            }
-            let captureGroups = match.captureGroups(in: term)
-            
-            let parentheticContents = captureGroups[0]
-            return .root(.n(3), createExpression(from: parentheticContents))
-            
-        // Logarithm
-        case let s where s.hasPrefix("log"):
-            
-            let rootRegex = try! NSRegularExpression(pattern: "^log(?:(0*[2-9]\\d*)|\\<(.+)\\>)?\\((.+)\\)$")
-            
-            guard let match = rootRegex.firstMatch(in: term, range: term.nsRange) else {
-                fatalError("Invalid format for expression")
-            }
-            let captureGroups = match.captureGroups(in: term)
-            
-            let base = captureGroups.count == 2 ? captureGroups[0] : "10"
-            let parentheticContents = captureGroups.last!
-            
-            return .log(createExpression(from: base), createExpression(from: parentheticContents))
-            
-        // Parentheses
-        case let s where s.hasPrefix("(") && s.hasSuffix(")"):
-            return createExpression(from: s[s.index(after: s.startIndex)..<s.index(before: s.endIndex)])
-
-        // Invalid term
-        default:
-            break
-        }
-
-        fatalError("Invalid format for expression")
-    }
-    
-    private static func reduceExpressionArray(_ arr: inout [_ExactExpression], with operations: [Operator], associativity: Operator.Associativity) {
-        
-        guard !operations.isEmpty else { return }
-        
-        let operators: [(index: Int, `operator`: Operator)] = Array(arr.lazy
-            .filter {
-                if case .operator(_) = $0 { return true }
-                else { return false }
-            }
-            .enumerated()
-            .map {
-                guard case let .operator(op) = $0.element else { fatalError() }
-                return (index: $0.offset * 2 + 1, operator: op)
-            }
-        )
-        
-        if associativity == .left {
-            var combinationOffset = 0
-            
-            for (index, `operator`) in operators where operations.contains(`operator`) {
-                let a = arr[index - 1 - combinationOffset]
-                let b = arr[index + 1 - combinationOffset]
-                
-                let replacementOperation = _ExactExpression.performOperation(between: a, and: b, with: `operator`)
-                
-                arr[(index - 1 - combinationOffset)...(index + 1 - combinationOffset)] = [replacementOperation]
-                combinationOffset += 2
-            }
-        } else if associativity == .right {
-            for (index, `operator`) in operators.reversed() where operations.contains(`operator`) {
-                let a = arr[index - 1]
-                let b = arr[index + 1]
-                
-                let replacementOperation = _ExactExpression.performOperation(between: a, and: b, with: `operator`)
-                
-                arr[(index - 1)...(index + 1)] = [replacementOperation]
-            }
-        }
-    }
-    private static func performOperation(between a: _ExactExpression, and b: _ExactExpression, with operation: Operator) -> _ExactExpression {
-        switch operation {
-        case .addition: return .add(a, b)
-        case .subtraction: return .subtract(a, b)
-        case .multiplication: return .multiply(a, b)
-        case .division: return .divide(a, b)
-        case .exponentiation: return .power(a, b)
-        }
-    }
-    private static func formatExpression<T: StringProtocol>(_ string: T) -> String {
-        
-        let exactNumberRegex = "[-\\+]?\\d+"
-        //let operators = Operator.allOperatorsString
-        let functions = ["sqrt", "cbrt", "root", "log"]
-        let anyOperator = "(?:" + Operator.allOperators.map { $0.rEsc() }.joined(separator: "|") + ")"
-        let anyFunction = "(?:" + functions.map { $0.rEsc() }.joined(separator: "|") + ")"
-
-        var str = String(string).trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Replace other braces with parentheses
-        do {
-            let braceDict: [Character: String] = ["{" : "(", "[" : "(", "]" : ")", "}" : ")"]
-            str = str.reduce("") { $0 + (braceDict[$1] ?? "\($1)") }
-        }
-        
-        // Space binary operators
-        do {
-            str = str.replacingOccurrences(of: rOr(exactNumberRegex, "\\)") + anyOperator.rGroup() + rOr(exactNumberRegex, "(?:\\(|" + anyFunction + ")", group: .positiveLookbehind), with: "$1 $2 ", options: .regularExpression)
-            
-            
-            str = str.replacingOccurrences(of: "(?<=[^\\s\\d])" + anyOperator.rGroup() + "(?=[^\\s\\d])", with: "$1 $2 $3", options: .regularExpression)
-            
-        }
-
-        // Replace parenthetic multiplication with star operator
-        do {
-            let parentheticMultiplicationPattern = rOr("(?<!log|root)(\(exactNumberRegex))\\s*(?=\\(|\(anyFunction)", "(\\))\\s*(?=\(exactNumberRegex))", "(\\))\\s*(?=\\(|\(anyFunction)", group: .none)
-            
-            str = str.replacingOccurrences(of: parentheticMultiplicationPattern, with: "$1$2$3 * ", options: .regularExpression)
-            
-            str = str.replacingOccurrences(of: ")(", with: ") * (")
-        }
-        // Replace adjacent multiplication with star operator
-        do {
-            let adjacentMultiplicationPattern = exactNumberRegex.rGroup() + "(?=\(anyFunction))"
-            
-            str = str.replacingOccurrences(of: adjacentMultiplicationPattern, with: "$1 * ", options: .regularExpression)
-
-        }
-        
-        // Fix prefix negative operator
-        do {
-            if let firstCharacter = str.first, firstCharacter == "-" {
-                str.replaceSubrange(str.startIndex...str.startIndex, with: "0 - ")
-            }
-            str = str.replacingOccurrences(of: "-\\(", with: "0 - (", options: .regularExpression)
-        }
-        
-        // Remove prefix positive operator
-        do {
-            
-            if let firstCharacter = str.first, firstCharacter == "+" {
-                str.removeFirst()
-            }
-            
-            str = str.replacingOccurrences(of: "(?<=[\\s\\(])\\+(?=[^\\)\\s])", with: "", options: .regularExpression)
-        }
-    
-        str = str.replacingOccurrences(of: "\\([\\s\\)\\(]*\\)", with: "")
-        
-        
-        return str
-        
-    }
-    
-
-}
-
-extension _ExactExpression: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case let .add(a, b):
-            return "(" + a.description + " + " + b.description + ")"
-        case let .subtract(a, b):
-            return "(" + a.description + " - " + b.description + ")"
-        case let .multiply(a, b):
-            return "(" + a.description + " * " + b.description + ")"
-        case let .divide(a, b):
-            return "(" + a.description + " / " + b.description + ")"
-        case let .power(a, b):
-            return "(" + a.description + " ^ " + b.description + ")"
-        case let .`operator`(a):
-            return " " + a.description + " "
-        case let .log(base, n):
-            var nStr = n.description
-            if case .n = n { nStr = "(\(nStr))" }
-            if case let .n(a) = base {
-                let subscriptDict: [Character: String] = ["0" : "₀", "1" : "₁", "2" : "₂", "3" : "₃", "4" : "₄", "5" : "₅", "6" : "₆", "7" : "₇", "8" : "₈", "9" : "₉", "-" : "₋"]
-                return "log" + "\(a)".reduce(into: "") { $0 += subscriptDict[$1]! } + nStr
-            }
-            
-            return "log<" + base.description + ">" + nStr
-            
-        case let .root(n, root):
-            var rootStr = root.description
-            if case .n = root { rootStr = "(\(rootStr))" }
-            if case let .n(a) = n {
-                switch a {
-                case 2: return "√(" + root.description + ")"
-                case 3: return "∛(" + root.description + ")"
-                case 4: return "∜(" + root.description + ")"
-                default:
-                    let superscriptDict: [Character: String]  = ["0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻"]
-                    
-                    return "\(a)".reduce(into: "") { $0 += superscriptDict[$1]! } + "√" + rootStr
-                }
-            }
-            return "root<" + n.description + ">" + rootStr
-            
-        case let .n(a):
-            return "\(a)"
-        }
-    }
-    var literalDescription: String {
-        switch self {
-        case let .add(a, b):
-            return ".add(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .subtract(a, b):
-            return ".subtract(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .multiply(a, b):
-            return ".multiply(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .divide(a, b):
-            return ".divide(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .power(a, b):
-            return ".power(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .log(a, b):
-            return ".log(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .root(a, b):
-            return ".root(" + a.literalDescription + ", " + b.literalDescription + ")"
-        case let .`operator`(a):
-            return ".operator(\(a.description))"
-        case let .n(a):
-            return ".n(\(a))"
-        }
-    }
-}
-
-
-
-
-
-
