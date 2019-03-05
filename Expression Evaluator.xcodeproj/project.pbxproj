@@ -18,7 +18,10 @@
 		C22F8AC12224C4C700F2E358 /* Parentheses.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8AC02224C4C600F2E358 /* Parentheses.swift */; };
 		C22F8AC32224C50B00F2E358 /* Expression Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8AC22224C50B00F2E358 /* Expression Formatting.swift */; };
 		C22F8AC72224C77400F2E358 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8AC62224C77400F2E358 /* String.swift */; };
+		C22F8EF3222ED2B3009897F8 /* Either.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8EF2222ED2B3009897F8 /* Either.swift */; };
 		C23E83D62225F7DC00A52F16 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23E83D52225F7DC00A52F16 /* Benchmarking.swift */; };
+		C25562B4222885A70029EDC7 /* Numeric Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B3222885A70029EDC7 /* Numeric Functions.swift */; };
+		C25562B62228885C0029EDC7 /* Exact Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B52228885C0029EDC7 /* Exact Expression.swift */; };
 		C29C907D221CAEBF00C85804 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C907C221CAEBF00C85804 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -46,7 +49,10 @@
 		C22F8AC02224C4C600F2E358 /* Parentheses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parentheses.swift; sourceTree = "<group>"; };
 		C22F8AC22224C50B00F2E358 /* Expression Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Expression Formatting.swift"; sourceTree = "<group>"; };
 		C22F8AC62224C77400F2E358 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
+		C22F8EF2222ED2B3009897F8 /* Either.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Either.swift; sourceTree = "<group>"; };
 		C23E83D52225F7DC00A52F16 /* Benchmarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmarking.swift; sourceTree = "<group>"; };
+		C25562B3222885A70029EDC7 /* Numeric Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Numeric Functions.swift"; sourceTree = "<group>"; };
+		C25562B52228885C0029EDC7 /* Exact Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exact Expression.swift"; sourceTree = "<group>"; };
 		C27EEB0F221EE08400FE8BF2 /* Graphing Equations.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = "Graphing Equations.playground"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		C29C9079221CAEBF00C85804 /* Expression Evaluator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Expression Evaluator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C29C907C221CAEBF00C85804 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -82,6 +88,8 @@
 				C22F8AB32224C0FF00F2E358 /* Expression.swift */,
 				C22F8AC22224C50B00F2E358 /* Expression Formatting.swift */,
 				C22F8AC02224C4C600F2E358 /* Parentheses.swift */,
+				C25562B52228885C0029EDC7 /* Exact Expression.swift */,
+				C22F8EF2222ED2B3009897F8 /* Either.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -98,6 +106,7 @@
 		C23E83D42225F7C300A52F16 /* Other */ = {
 			isa = PBXGroup;
 			children = (
+				C25562B3222885A70029EDC7 /* Numeric Functions.swift */,
 				C23E83D52225F7DC00A52F16 /* Benchmarking.swift */,
 			);
 			path = Other;
@@ -194,7 +203,10 @@
 				C29C907D221CAEBF00C85804 /* main.swift in Sources */,
 				C22F8ABB2224C2FF00F2E358 /* NSTextCheckingResult.swift in Sources */,
 				C22F8AB0222053C000F2E358 /* Quick Regex Functions.swift in Sources */,
+				C25562B62228885C0029EDC7 /* Exact Expression.swift in Sources */,
 				C22F8AC12224C4C700F2E358 /* Parentheses.swift in Sources */,
+				C25562B4222885A70029EDC7 /* Numeric Functions.swift in Sources */,
+				C22F8EF3222ED2B3009897F8 /* Either.swift in Sources */,
 				C22F8AC72224C77400F2E358 /* String.swift in Sources */,
 				C22F8ABF2224C3F800F2E358 /* String Integer Subscript.swift in Sources */,
 				C22F8AB22224C0F500F2E358 /* Operator.swift in Sources */,

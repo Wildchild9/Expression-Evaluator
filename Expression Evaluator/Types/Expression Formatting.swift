@@ -8,12 +8,12 @@
 
 import Foundation
 
-public let numberRegex = "[-\\+]?\\d+(?:\\.\\d+)?(?:[eE][-\\+]?\\d+(?:\\.\\d+)?)?"
+public let numberRegex = "[-\\+]?\\d+(?:\\.\\d+)?(?:[eE][-\\+]?\\d+)?"
 
 
 public func applyFormatting<T: StringProtocol>(to equation: T) -> String {
     
-    let operators = Operator.allOperators
+    let operators = Operator.allOperatorsString
     
     var str = String(equation)
     
@@ -42,7 +42,8 @@ public func applyFormatting<T: StringProtocol>(to equation: T) -> String {
         if let firstCharacter = str.first, firstCharacter == "-" {
             str.replaceSubrange(str.startIndex...str.startIndex, with: "0 - ")
         }
-        str = str.replacingOccurrences(of: "-\\(", with: "-1 * (", options: .regularExpression)
+        
+        str = str.replacingOccurrences(of: "-(?=\\(|\\d)", with: "0 - ", options: .regularExpression)
     }
     
     str = str.removingExtraParantheses()

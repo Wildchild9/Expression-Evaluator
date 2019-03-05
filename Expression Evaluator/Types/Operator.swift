@@ -8,15 +8,41 @@
 
 import Foundation
 
-public enum Operator {
+public enum Operator: CaseIterable {
     case addition
     case subtraction
     case multiplication
     case division
     case exponentiation
     
-    public static let allOperators = "^*/+-"
+    public enum Associativity {
+        case left, right
+    }
     
+    public static let allOperators = Operator.allCases.map { $0.symbol }
+    public static let allOperatorsString = allOperators.joined()
+    public static let groupedByPrecedence = [(operators: [Operator.exponentiation],    associativity: Associativity.right),
+                                             (operators: [.addition, .subtraction],    associativity: .left), 
+                                             (operators: [.division, .multiplication], associativity: .left)]
+    
+    public var symbol: String {
+        switch self {
+        case .addition: return "+"
+        case .subtraction: return "-"
+        case .multiplication: return "*"
+        case .division: return "/"
+        case .exponentiation: return "^"
+        }
+    }
+    public var associativity: Associativity {
+        switch self {
+        case .addition: return .left
+        case .subtraction: return .left
+        case .multiplication: return .left
+        case .division: return .left
+        case .exponentiation: return .right
+        }
+    }
     public var operation: (Double, Double) -> Double {
         switch self {
         case .addition: return (+)

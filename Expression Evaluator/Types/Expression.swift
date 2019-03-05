@@ -9,9 +9,6 @@
 import Foundation
 
 
-var i = 0
-
-
 public enum Expression {
     indirect case add(Expression, Expression)
     indirect case subtract(Expression, Expression)
@@ -19,22 +16,6 @@ public enum Expression {
     indirect case divide(Expression, Expression)
     indirect case power(Expression, Expression)
     case n(Double)
-    
-    
-//    func containsTermOnTopLevel(_ t: (Expression), matchNumber: Bool = true) -> Bool {
-//        switch self {
-//        case let .add(a, b)      where a == t || b == t,
-//             let .subtract(a, b) where a == t || b == t,
-//             let .multiply(a, b) where a == t || b == t,
-//             let .divide(a, b)   where a == t || b == t,
-//             let .power(a, b)    where a == t || b == t:
-//            return true
-//        case .n where matchNumber && self == t:
-//            return true
-//        default:
-//            return false
-//        }
-//    }
    
     func contains(where predicate: (Expression) -> Bool) -> Bool {
         guard !predicate(self) else { return true }
@@ -70,6 +51,17 @@ public enum Expression {
         default: return false
         }
     }
+    
+//    func exact() -> Expression {
+//        switch self {
+//        case let .add(a, b): return a.evaluate() + b.evaluate()
+//        case let .subtract(a, b): return a.evaluate() - b.evaluate()
+//        case let .multiply(a, b): return a.evaluate() * b.evaluate()
+//        case let .divide(a, b): return a.evaluate() / b.evaluate()
+//        case let .power(a, b): return pow(a.evaluate(), b.evaluate())
+//        case let .n(a): return a
+//        }
+//    }
     
     
     public init (_ string: String, simplify: Bool = true) {
@@ -118,8 +110,9 @@ public enum Expression {
     public func simplified() -> Expression {
         return _simplified()
     }
-    
+ 
     private func _simplified() -> Expression {
+
         switch self {
         // Number
         case .n:
@@ -151,12 +144,25 @@ public enum Expression {
                  let (.subtract(y, x1), x2) where x1 == x2:
                 return y
                 
+            
             // a(x) + b(x) = (a + b)(x)
             case let (.multiply(a, x1), .multiply(b, x2)) where x1 == x2,
                  let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
                  let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
                 return Expression.multiply(.add(a, b), x1)._simplified()
+                
+            // x + ax = (a + 1)(x)
+            case let (x1, .multiply(a, x2)) where x1 == x2,
+                 let (x1, .multiply(x2, a)) where x1 == x2,
+                 let (.multiply(a, x1), x2) where x1 == x2,
+                 let (.multiply(x1, a), x2) where x1 == x2:
+                if case let .n(value) = a {
+                    return Expression.multiply(.n(value + 1), x1)._simplified()
+                }
+                return Expression.multiply(.add(a, .n(1)), x1)._simplified()
+                
+            
                 
             // no simplification
             case let (a, b):
@@ -207,6 +213,22 @@ public enum Expression {
                  let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
                 return Expression.multiply(.subtract(a, b), x1)._simplified()
                 
+            // x - ax = (a + 1)(x)
+            case let (x1, .multiply(a, x2)) where x1 == x2,
+                 let (x1, .multiply(x2, a)) where x1 == x2:
+                if case let .n(value) = a {
+                    return Expression.multiply(.n(value + 1), x1)._simplified()
+                }
+                return Expression.multiply(.add(a, .n(1)), x1)._simplified()
+            
+            // ax - x = (a - 1)(x)
+            case let (.multiply(a, x1), x2) where x1 == x2,
+                 let (.multiply(x1, a), x2) where x1 == x2:
+                if case let .n(value) = a {
+                    return Expression.multiply(.n(value - 1), x1)._simplified()
+                }
+                return Expression.multiply(.subtract(a, .n(1)), x1)._simplified()
+                
             // no simplification
             case let (a, b):
                 return .subtract(a, b)
@@ -246,6 +268,11 @@ public enum Expression {
                  let (.divide(y, x1), x2) where x1 == x2:
                 return y
                 
+            // x * (a / b) = x/b * a
+            case let (.n(x), .divide(a, .n(b))) where x.truncatingRemainder(dividingBy: b) == 0.0,
+                 let (.divide(a, .n(b)), .n(x)) where x.truncatingRemainder(dividingBy: b) == 0.0:
+                return Expression.multiply(.n(x / b), a)
+                
             // x * x ^ y = x ^ (y + 1)
             case let (x1, .power(x2, y)) where x1 == x2,
                  let (.power(x1, y), x2) where x1 == x2:
@@ -273,6 +300,7 @@ public enum Expression {
             case let (.divide(x1, y1), .divide(x2, y2)) where x1 == x2 && y1 == y2:
                  return .n(1)
                 
+          
             // no simplification
             case let (a, b):
                 return .multiply(a, b)
@@ -312,10 +340,30 @@ public enum Expression {
                  let (.multiply(y, x1), x2) where x1 == x2:
                 return y
                 
+            // ax / bx = a / b
+            case let (.multiply(a, x1), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(a, x1), .multiply(x2, b)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(x2, b)) where x1 == x2:
+                return Expression.divide(a, b)._simplified()
+                
             // x / (x * y) = 1 / y
             case let (x1, .multiply(x2, y)) where x1 == x2,
                  let (x1, .multiply(y, x2)) where x1 == x2:
                 return .divide(.n(1), y)
+                
+            // 10 / 2 = 5
+            case let (.n(x), .n(y)) where x.truncatingRemainder(dividingBy: y) == 0:
+                return .n(x / y)
+                
+            // 10 / 5 = 1 / 2
+            case let (.n(x), .n(y)) where y.truncatingRemainder(dividingBy: x) == 0:
+                return .divide(.n(1), .n(y / x))
+                
+            // 10 / 5 = 1 / 2
+            case let (.n(x), .n(y)) where x == floor(x) && y == floor(y):
+                let gcf = gcd(Int(x), Int(y))
+                return .divide(.n(Double(Int(x) / gcf)), .n(Double(Int(y) / gcf)))
                 
             // no simplification
             case let (a, b):
@@ -505,7 +553,7 @@ private enum _Expression {
         guard arr.count > 1 else { return .n(Double(String(arr[0]))!) }
         guard arr.count % 2 == 1 else { fatalError("Invalid format") }
         
-        let operators = Operator.allOperators
+        let operators = Operator.allOperatorsString
         
         var operatorArr: [Operator] = [Operator]()
         var termArr = [Substring]()
