@@ -46,8 +46,12 @@ public extension Regex where Base: StringProtocol, Base.Index == String.Index {
 
         return str.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
     }
+    public func matches<Target: StringProtocol>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = []) -> [Substring] {
+        return matches(pattern: regex, options: options, in: base.startIndex..<base.endIndex)
+    }
     
     public func matches<Target: StringProtocol, Region: RangeExpression>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = [], in region: Region) -> [Substring] where Region.Bound == Base.Index {
+        
         let s = String(base)
         
         do {

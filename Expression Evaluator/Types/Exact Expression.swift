@@ -8,14 +8,12 @@
 
 import Foundation
 
-precedencegroup ExponentiationPrecedence {
-    higherThan: MultiplicationPrecedence
-    lowerThan: BitwiseShiftPrecedence
-    associativity: right
-}
-infix operator ^: ExponentiationPrecedence
+
+//////////////////////
+//MARK: - ExactExpression Declaration
 
 public enum ExactExpression {
+    
     indirect case add(ExactExpression, ExactExpression)
     indirect case subtract(ExactExpression, ExactExpression)
     indirect case multiply(ExactExpression, ExactExpression)
@@ -25,26 +23,8 @@ public enum ExactExpression {
     indirect case root(ExactExpression, ExactExpression)
     case n(Int)
     
+    // Static constants
     public static let zero = ExactExpression.n(0)
-
-    public var isNumber: Bool {
-        if case .n = self {
-            return true
-        }
-        return false
-    }
-    public var isRoot: Bool {
-        if case .root = self {
-            return true
-        }
-        return false
-    }
-    public var isLog: Bool {
-        if case .log = self {
-            return true
-        }
-        return false
-    }
 
     // Initializer
     public init (_ string: String, simplify: Bool = true) {
@@ -56,34 +36,15 @@ public enum ExactExpression {
         }
     }
     
-    // Operators
-    public static func + (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
-        return .add(lhs, rhs)
-    }
-    public static func - (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
-        return .subtract(lhs, rhs)
-    }
-    public static func * (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
-        return .multiply(lhs, rhs)
-    }
-    public static func / (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
-        return .divide(lhs, rhs)
-    }
-    public static func ^ (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
-        return .power(lhs, rhs)
-    }
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Expression formatting, parsing, and creation
+
+public extension ExactExpression {
     
-    public static prefix func - (expression: ExactExpression) -> ExactExpression {
-        if case let .n(x) = expression {
-            return .n(-x)
-        }
-        return .subtract(.n(0), expression)
-    }
-    
-    
-    
-    
-    // Expression formatting, parsing, and creation
     private static func createExpression<T: StringProtocol>(from str: T) -> ExactExpression {
         guard !str.isEmpty else { fatalError() }
         
@@ -222,7 +183,9 @@ public enum ExactExpression {
         
         fatalError("Invalid format for expression")
     }
-    private static func reduceExpressionArray(_ arr: inout [Either<ExactExpression, Operator>], with operations: [Operator], associativity: Operator.Associativity) {
+    private static func reduceExpressionArray(_ arr: inout [Either<ExactExpression, Operator>],
+                                              with operations: [Operator],
+                                              associativity: Operator.Associativity) {
         
         guard !operations.isEmpty else { return }
         
@@ -243,8 +206,8 @@ public enum ExactExpression {
             
             for (index, `operator`) in operators where operations.contains(`operator`) {
                 guard case let .left(a) = arr[index - 1 - combinationOffset],
-                      case let .left(b) = arr[index + 1 - combinationOffset] else {
-                    fatalError("Error creating expression")
+                    case let .left(b) = arr[index + 1 - combinationOffset] else {
+                        fatalError("Error creating expression")
                 }
                 
                 
@@ -256,8 +219,8 @@ public enum ExactExpression {
         } else if associativity == .right {
             for (index, `operator`) in operators.reversed() where operations.contains(`operator`) {
                 guard case let .left(a) = arr[index - 1],
-                      case let .left(b) = arr[index + 1] else {
-                    fatalError("Error creating expression")
+                    case let .left(b) = arr[index + 1] else {
+                        fatalError("Error creating expression")
                 }
                 
                 let replacementOperation = ExactExpression.performOperation(between: a, and: b, with: `operator`)
@@ -341,73 +304,68 @@ public enum ExactExpression {
         
     }
     
-    
-    // Methods
-    public func contains(where predicate: (ExactExpression) -> Bool) -> Bool {
-        guard !predicate(self) else { return true }
-        
-        switch self {
-        case let .add(a, b),
-             let .subtract(a, b),
-             let .multiply(a, b),
-             let .divide(a, b),
-             let .power(a, b),
-             let .log(a, b),
-             let .root(a, b):
-            if predicate(a) || predicate(b) {
-                return true
-            } else {
-                return a.contains(where: predicate) || b.contains(where: predicate)
-            }
-        default: return false
-        }
-    }
-    public func contains(_ expression: ExactExpression) -> Bool {
-        guard self != expression else { return true }
-        
-        switch self {
-        case let .add(a, b),
-             let .subtract(a, b),
-             let .multiply(a, b),
-             let .divide(a, b),
-             let .power(a, b),
-             let .log(a, b),
-             let .root(a, b):
-            if a == expression || b == expression {
-                return true
-            } else {
-                return a.contains(expression) || b.contains(expression)
-            }
-        default: return false
-        }
-    }
+}
 
-    public func evaluate() -> Double {
-        switch self {
-        case let .add(a, b): return a.evaluate() + b.evaluate()
-        case let .subtract(a, b): return a.evaluate() - b.evaluate()
-        case let .multiply(a, b): return a.evaluate() * b.evaluate()
-        case let .divide(a, b): return a.evaluate() / b.evaluate()
-        case let .power(a, b): return pow(a.evaluate(), b.evaluate())
-        case let .log(a, b): return log10(b.evaluate()) / log10(a.evaluate())
-        case let .root(a, b):
-            let x = a.evaluate()
-            if x == 2 {
-                return sqrt(b.evaluate())
-            } else if x == 3 {
-                return cbrt(b.evaluate())
-            }
-            return pow(b.evaluate(), 1.0 / a.evaluate())
-        case let .n(a): return Double(a)
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Computed properties
+
+public extension ExactExpression {
+
+    public var isNumber: Bool {
+        if case .n = self {
+            return true
         }
+        return false
     }
+    public var isPower: Bool {
+        if case .power = self {
+            return true
+        }
+        return false
+    }
+    public var isRoot: Bool {
+        if case .root = self {
+            return true
+        }
+        return false
+    }
+    public var isLog: Bool {
+        if case .log = self {
+            return true
+        }
+        return false
+    }
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Pattern matching with integers
+
+public extension ExactExpression {
+    public static func ~= (lhs: Int, rhs: ExactExpression) -> Bool {
+        if case let .n(x) = rhs, x == lhs {
+            return true
+        }
+        return false
+    }
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Expression simplification
+
+public extension ExactExpression {
     
     public func simplified() -> ExactExpression {
         return _simplified()
     }
     
     private func _simplified() -> ExactExpression {
-    
+        
         switch self {
         // Number
         case .n:
@@ -428,7 +386,12 @@ public enum ExactExpression {
                 
             // x + (-x) = 0
             case let (.n(x), .n(y)) where x == -y:
-                return .n(0)
+                return .zero
+                
+            // x + (0 - x) = 0
+            case let (x, .subtract(0, y)) where x == y,
+                 let (.subtract(0, y), x) where x == y:
+                return .zero
                 
             // x + (y - x) = y
             case let (x1, .subtract(y, x2)) where x1 == x2,
@@ -468,7 +431,11 @@ public enum ExactExpression {
             case let (.divide(a, .n(x)), .divide(b, .n(y))):
                 let d = lcm(x, y)
                 return ExactExpression.divide(.add(.multiply(a, .n(d / x)), .multiply(b, .n(d / y))), .n(d))._simplified()
-
+                
+            // a + (b / x) = (ax + b) / x
+            case let (a, .divide(b, x)),
+                 let (.divide(b, x), a):
+                return ExactExpression.divide(.add(.multiply(a, x), b), x)._simplified()
                 
             // log<x>(a) + log<x>(b) = log<x>(ab)
             case let (.log(x, a), .log(y, b)) where x == y:
@@ -490,12 +457,12 @@ public enum ExactExpression {
             let rhsSimplified = rhs._simplified()
             
             switch (lhsSimplified, rhsSimplified) {
-
+                
             // x - 0 = x
             case let (x, 0):
                 return x
                 
-            // x + (-x) = 0
+            // x - x = 0
             case let (x, y) where x == y:
                 return .n(0)
                 
@@ -550,17 +517,25 @@ public enum ExactExpression {
                 
             // (a / xy) - (b / x) = (a - by) / x
             case let (.divide(a, .multiply(y, x1)), .divide(b, x2)) where x1 == x2,
-                let (.divide(a, .multiply(x1, y)), .divide(b, x2)) where x1 == x2:
+                 let (.divide(a, .multiply(x1, y)), .divide(b, x2)) where x1 == x2:
                 return ExactExpression.divide(.subtract(a, .multiply(b, y)), .multiply(x1, y))._simplified()
-
+                
             // Subtract fractions with lcm
             case let (.divide(a, .n(x)), .divide(b, .n(y))):
                 let d = lcm(x, y)
-                return ExactExpression.subtract(.subtract(.multiply(a, .n(d / x)), .multiply(b, .n(d / y))), .n(d))._simplified()
+                return ExactExpression.divide(.subtract(.multiply(a, .n(d / x)), .multiply(b, .n(d / y))), .n(d))._simplified()
+                
+            // Subtract fractions with common denominator multiplicand and lcm
+            case let (.divide(a, .multiply(g1, .n(b))), .divide(x, .multiply(g2, .n(y)))) where g1 == g2,
+                 let (.divide(a, .multiply(g1, .n(b))), .divide(x, .multiply(.n(y), g2))) where g1 == g2,
+                 let (.divide(a, .multiply(.n(b), g1)), .divide(x, .multiply(g2, .n(y)))) where g1 == g2,
+                 let (.divide(a, .multiply(.n(b), g1)), .divide(x, .multiply(.n(y), g2))) where g1 == g2:
+                let lcmBY = lcm(b, y)
+                return ((a * .n(lcmBY / b) - (x * .n(lcmBY / y))) / (.n(lcmBY) * g1))._simplified()
                 
             // log<x>(a) - log<x>(b) = log<x>(a / b)
             case let (.log(x, a), .log(y, b)) where x == y:
-                return ExactExpression.log(x, .divide(a, b))._simplified()
+                return ExactExpression.log(x, a / b)._simplified()
                 
             // a - b
             case let (.n(a), .n(b)):
@@ -581,36 +556,41 @@ public enum ExactExpression {
                 
             // 0x = 0
             case (0, _), (_, 0):
-                return .n(0)
+                return .zero
                 
             // 1x = x
             case let (x, 1), let (1, x):
                 return x
                 
-            // -1x = x
-            case let (.n(x), -1), let (-1, .n(x)):
-                return .n(-x)
+            // -1x = -x
+            case let (x, -1), let (-1, x):
+                if case let .n(value) = x {
+                    return .n(-value)
+                }
+                return 0 - x
                 
             // x * x = x ^ 2
             case let (x, y) where x == y:
-                return .power(x, .n(2))
+                return (x ^ 2)._simplified()
                 
             // a * (b * x) = ab * x
             case let (.n(a), .multiply(.n(b), x)),
                  let (.n(a), .multiply(x, .n(b))),
                  let (.multiply(.n(a), x), .n(b)),
                  let (.multiply(x, .n(a)), .n(b)):
-                return .multiply(.n(a * b), x)
+                return (.n(a * b) * x)
                 
-            // x * (y / x) = y
-            case let (x1, .divide(y, x2)) where x1 == x2,
-                 let (.divide(y, x1), x2) where x1 == x2:
-                return y
+            // b * (a / b) = a
+            case let (b1, .divide(a, b2)) where b1 == b2,
+                 let (.divide(a, b1), b2) where b1 == b2:
+                return a
                 
-            // x * (a / b) = x/b * a
-            case let (.n(x), .divide(a, .n(b))) where x % b == 0,
-                 let (.divide(a, .n(b)), .n(x)) where x % b == 0:
-                return ExactExpression.multiply(.n(x / b), a)
+            // x * (a / b) = ((x / GCD(x, b)) * a) / (b / GCD(x, b))
+            case let (.n(x), .divide(a, .n(b))),
+                 let (.divide(a, .n(b)), .n(x)):
+                let gcdBX = lcm(b, x)
+                return ((.n(x / gcdBX) * a) / .n(b / gcdBX))._simplified()
+                
                 
             // x * x ^ y = x ^ (y + 1)
             case let (x1, .power(x2, y)) where x1 == x2,
@@ -620,31 +600,31 @@ public enum ExactExpression {
                 }
                 return ExactExpression.power(x1, .add(.n(1), y))._simplified()
                 
-            // (1 / x) * y = y / x
+            // (1 / y) * x = x / y
             case let (.divide(1, den), num),
                  let (num, .divide(1, den)):
-                return ExactExpression.divide(num, den)._simplified()
+                return (num /  den)._simplified()
                 
-            // (-1 / x) * y = y / x
+            // (-1 / y) * x = x / y
             case let (.divide(-1, den), num),
                  let (num, .divide(-1, den)):
                 if case let .n(x) = num {
-                    return ExactExpression.divide(.n(-x), den)._simplified()
+                    return (.n(-x) / den)._simplified()
                 } else if case let .n(y) = den {
-                    return ExactExpression.divide(num, .n(-y))._simplified()
+                    return (num / .n(-y))._simplified()
                 }
-                return ExactExpression.divide(.subtract(.n(0), num), den)._simplified()
+                return ((.zero - num) / den)._simplified()
                 
             // (x / y) * (y / x) = 1
-            case let (.divide(x1, y1), .divide(x2, y2)) where x1 == x2 && y1 == y2:
+            case let (.divide(x1, y1), .divide(y2, x2)) where x1 == x2 && y1 == y2:
                 return .n(1)
-        
+                
             // Cross reduction
             case let (.divide(.n(a), .n(b)), .divide(.n(x), .n(y))):
                 let commonAY = gcd(a, y)
                 let commonBX = gcd(b, x)
                 return ExactExpression.divide(.n((a / commonAY) * (x / commonBX)), .n((y / commonAY) * (b / commonBX)))._simplified()
-
+                
             // Cross reduction
             case let (.divide(.n(a), b), .divide(x, .n(y))):
                 let commonAY = gcd(a, y)
@@ -654,10 +634,29 @@ public enum ExactExpression {
             case let (.divide(a, .n(b)), .divide(.n(x), y)):
                 let commonBX = gcd(b, x)
                 return ExactExpression.divide(.multiply(a, .n(x / commonBX)), .multiply(y, .n(b / commonBX)))._simplified()
-              
+            
+            // a * (x / y) = ax / y
+            case let (a, .divide(x, y)),
+                 let (.divide(x, y), a):
+                return ((a * x) / y)._simplified()
+                
             // x^a * x^b = x^(a + b)
             case let (.power(x1, a), .power(x2, b)) where x1 == x2:
                 return ExactExpression.power(x1, .add(a, b))._simplified()
+                
+            // x^a * px^b = px^(a + b)
+            case let (.power(x1, a), .multiply(p, .power(x2, b))) where x1 == x2,
+                 let (.power(x1, a), .multiply(.power(x2, b), p)) where x1 == x2,
+                 let (.multiply(p, .power(x1, a)), .power(x2, b)) where x1 == x2,
+                 let (.multiply(.power(x1, a), p), .power(x2, b)) where x1 == x2:
+                return (p * (x1 ^ (a + b)))._simplified()
+           
+            // px^a * qx^b = pqx^(a + b)
+            case let (.multiply(p, .power(x1, a)), .multiply(q, .power(x2, b))) where x1 == x2,
+                 let (.multiply(p, .power(x1, a)), .multiply(.power(x2, b), q)) where x1 == x2,
+                 let (.multiply(.power(x1, a), p), .multiply(q, .power(x2, b))) where x1 == x2,
+                 let (.multiply(.power(x1, a), p), .multiply(.power(x2, b), q)) where x1 == x2:
+                return (p * q * (x1 ^ (a + b)))._simplified()
                 
             // log<x>(a) * log<a>(y) = log<x>(y)
             case let (.log(x, a), .log(b, y)) where a == b:
@@ -683,17 +682,17 @@ public enum ExactExpression {
             case (_, 0):
                 fatalError("Division by zero")
                 
-            // 0 / x = x
+            // 0 / x = 0
             case (0, _):
-                return .n(0)
+                return .zero
                 
             // x / 1 = x
             case let (x, 1):
                 return x
                 
-            // x /- 1 = x
-            case let (.n(x), -1):
-                return .n(-x)
+            // x / -1 = -x
+            case let (x, -1):
+                return -x
                 
             // x / x = 1
             case let (x, y) where x == y:
@@ -703,10 +702,14 @@ public enum ExactExpression {
             case let (.multiply(x1, y), x2) where x1 == x2,
                  let (.multiply(y, x1), x2) where x1 == x2:
                 return y
-        
+                
             // x / (x / y) = y
             case let (x1, .divide(x2, y)) where x1 == x2:
                 return y
+                
+            // (a / b) / c = a / bc
+            case let (.divide(a, b), c):
+                return (a / (b * c))._simplified()
                 
             // a / (x / y) = a * (y / x)
             case let (a, .divide(x, y)):
@@ -724,9 +727,106 @@ public enum ExactExpression {
                  let (x1, .multiply(y, x2)) where x1 == x2:
                 return .divide(.n(1), y)
                 
+            // (ax + bx) / x = a + b
+            case let (.add(.multiply(a, x1), .multiply(b, x2)), x3) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(a, x1), .multiply(x2, b)), x3) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(b, x2)), x3) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(x2, b)), x3) where x1 == x2 && x2 == x3:
+                return (a + b)._simplified()
+                
+            // (ax + bx) / cx = (a + b) / c
+            case let (.add(.multiply(a, x1), .multiply(b, x2)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(a, x1), .multiply(x2, b)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(b, x2)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(x2, b)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(a, x1), .multiply(b, x2)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(a, x1), .multiply(x2, b)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(b, x2)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.add(.multiply(x1, a), .multiply(x2, b)), .multiply(x3, c)) where x1 == x2 && x2 == x3:
+                return ((a + b) / c)._simplified()
+
+            // (ax - bx) / x = a - b
+            case let (.subtract(.multiply(a, x1), .multiply(b, x2)), x3) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(a, x1), .multiply(x2, b)), x3) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(b, x2)), x3) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(x2, b)), x3) where x1 == x2 && x2 == x3:
+                return (a - b)._simplified()
+                
+            // (ax - bx) / cx = (a - b) / c
+            case let (.subtract(.multiply(a, x1), .multiply(b, x2)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(a, x1), .multiply(x2, b)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(b, x2)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(x2, b)), .multiply(c, x3)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(a, x1), .multiply(b, x2)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(a, x1), .multiply(x2, b)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(b, x2)), .multiply(x3, c)) where x1 == x2 && x2 == x3,
+                 let (.subtract(.multiply(x1, a), .multiply(x2, b)), .multiply(x3, c)) where x1 == x2 && x2 == x3:
+                return ((a - b) / c)._simplified()
+                
+            // x^y / x = x ^ (y - 1)
+            case let (.power(x1, y), x2) where x1 == x2:
+                return (x1 ^ (y - 1))._simplified()
+                
+            // x / x^y = x ^ (1 - y)
+            case let (x1, .power(x2, y)) where x1 == x2:
+                return (x1 ^ (1 - y))._simplified()
+                
             // x^a / x^b = x^(a - b)
             case let (.power(x1, a), .power(x2, b)) where x1 == x2:
-                return ExactExpression.power(x1, .subtract(a, b))._simplified()
+                return (x1 ^ (a - b))._simplified()
+                
+            // ax^y / x = ax^(y - 1)
+            case let (.multiply(a, .power(x1, y)), x2) where x1 == x2,
+                 let (.multiply(.power(x1, y), a), x2) where x1 == x2:
+                return (a * x1 ^ (y - 1))._simplified()
+                
+            // x^y / ax = (1 / a) * x^(y - 1)
+            case let (.power(x1, y), .multiply(a, x2)) where x1 == x2,
+                 let (.power(x1, y), .multiply(x2, a)) where x1 == x2:
+                return ((1 / a) * x1 ^ (y - 1))._simplified()
+                
+            // ax^y / bx = (a / b) * x^(y - 1)
+            case let (.multiply(a, .power(x1, y)), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(a, .power(x1, y)), .multiply(x2, b)) where x1 == x2,
+                 let (.multiply(.power(x1, y), a), .multiply(b, x2)) where x1 == x2,
+                 let (.multiply(.power(x1, y), a), .multiply(x2, b)) where x1 == x2:
+                return ((a / b) * x1 ^ (y - 1))._simplified()
+                
+            // ax / x^y = ax^(1 - 1)
+            case let (x1, .multiply(a, .power(x2, y))) where x1 == x2,
+                 let (x1, .multiply(.power(x2, y), a)) where x1 == x2:
+                return (a * x1 ^ (1 - y))._simplified()
+                
+            // x / ax^y = (1 / a) * x^(1 - y)
+            case let (.multiply(a, x1), .power(x2, y)) where x1 == x2,
+                 let (.multiply(x1, a), .power(x2, y)) where x1 == x2:
+                return ((1 / a) * x1 ^ (1 - y))._simplified()
+                
+            // ax / bx^y = (a / b) * x^(1 - y)
+            case let (.multiply(a, x1), .multiply(b, .power(x2, y))) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(b, .power(x2, y))) where x1 == x2,
+                 let (.multiply(a, x1), .multiply(.power(x2, y), b)) where x1 == x2,
+                 let (.multiply(x1, a), .multiply(.power(x2, y), b)) where x1 == x2:
+                return ((a / b) * x1 ^ (1 - y))._simplified()
+                
+            // ax^g / x^h = ax^(g - h)
+            case let (.power(x1, g), .multiply(a, .power(x2, h))) where x1 == x2,
+                 let (.power(x1, g), .multiply(.power(x2, h), a)) where x1 == x2:
+                return (a * x1 ^ (g - h))._simplified()
+                
+            // x^g / ax^h = (1 / a) * x^(g - h)
+            case let (.multiply(a, .power(x1, g)), .power(x2, h)) where x1 == x2,
+                 let (.multiply(.power(x1, g), a), .power(x2, h)) where x1 == x2:
+                return ((1 / a) * x1 ^ (g - h))._simplified()
+                
+            // ax^g / bx^h = (a / b) * x^(g - h)
+            case let (.multiply(a, .power(x1, g)), .multiply(b, .power(x2, h))) where x1 == x2,
+                 let (.multiply(.power(x1, g), a), .multiply(b, .power(x2, h))) where x1 == x2,
+                 let (.multiply(a, .power(x1, g)), .multiply(.power(x2, h), b)) where x1 == x2,
+                 let (.multiply(.power(x1, g), a), .multiply(.power(x2, h), b)) where x1 == x2:
+                return ((a / b) * x1 ^ (g - h))._simplified()
+               
+            
                 
             // 10 / 2 = 5
             case let (.n(x), .n(y)) where x % y == 0:
@@ -758,7 +858,7 @@ public enum ExactExpression {
             case let (.multiply(x, .log(y1, a)), .log(y2, b)) where y1 == y2:
                 return ExactExpression.multiply(x, .log(b, a))._simplified()
                 
-            // xlog<y>(a) / log<y>(b) = xlog<b>(a)
+            // log<y>(a) / xlog<y>(b) = (1 / x)log<b>(a)
             case let (.log(y1, a), .multiply(x, .log(y2, b))) where y1 == y2:
                 return ExactExpression.multiply(.divide(.n(1), x), .log(b, a))._simplified()
                 
@@ -803,14 +903,14 @@ public enum ExactExpression {
             case let (.divide(x, y), .n(e)) where e < 0:
                 return ExactExpression.power(.divide(y, x), .n(-e))._simplified()
                 
-            // x ^ -e = 1 / x ^ e
+            // x ^ -e = 1 / (x ^ e)
             case let (x, .n(e)) where e < 0:
                 return ExactExpression.divide(.n(1), .power(x, .n(-e)))._simplified()
                 
             // ˣ√(y) ^ x = y
             case let (.root(x1, y), x2) where x1 == x2:
                 return y
-            
+                
             // x ^ logᵪy = y
             case let (x1, .log(x2, y)) where x1 == x2:
                 return y
@@ -819,19 +919,23 @@ public enum ExactExpression {
             case let (x1, .multiply(a, .log(x2, y))) where x1 == x2:
                 return .power(y, a)
                 
+            // (a ^ b) ^ c = a ^ bc
+            case let (.power(a, b), c):
+                return ExactExpression.power(a, .multiply(b, c))._simplified()
+                
             // Reduce power to lowest base
             case let (.n(x), y):
                 if let perfectPower = x.perfectPower() {
                     return ExactExpression.power(.n(perfectPower.base), .multiply(.n(perfectPower.exponent), y))._simplified()
                 }
                 return self
-             
+                
             // no simplification
             case let (a, b):
                 return .power(a, b)
                 
             }
-        
+            
         // Logarithms
         case let .log(lhs, rhs):
             let lhsSimplified = lhs._simplified()
@@ -842,35 +946,10 @@ public enum ExactExpression {
             // log<...1> = NaN
             case let (.n(x), _) where x < 2:
                 fatalError("Cannot find the value of a log with an integral base less than 2")
-            
+                
             // logᵪ(x) = 1
             case let (x, y) where x == y:
                 return .n(1)
-                
-            // log<1/a>(1/b) = log<a>(b)
-            case let (.divide(.n(1), a), .divide(.n(1), b)):
-                return ExactExpression.log(a, b)._simplified()
-                
-            // log<1/a>(b) = -log<a>(b)
-            // log<a>(1/b) = -log<a>(b)
-            case let (.divide(.n(1), a), b),
-                 let (a, .divide(.n(1), b)):
-                return ExactExpression.subtract(.zero, .log(a, b))._simplified()
-                
-            // log<a^x>(b) = blogᵪa
-            case let (.power(a, x1), .power(b, x2)) where x1 == x2:
-                return ExactExpression.log(a, b)._simplified()
-                
-            case let (.power(a, x1), .power(b, x2)):
-                return ExactExpression.multiply(.divide(x2, x1), .log(a, b))._simplified()
-                
-            // logᵪ(a^b) = blogᵪa
-            case let (x, .power(a, b)):
-                return ExactExpression.multiply(b, .log(x, a))._simplified()
-                
-            // log<a^b>(x) = (1/b) * log<a>(x)
-            case let (.power(a, b), x):
-                return ExactExpression.multiply(.divide(.n(1), b), .log(a, x))._simplified()
                 
             // log<ˣ√y>(y) = x
             // log<1 / ˣ√y>(1 / y) = x
@@ -882,18 +961,41 @@ public enum ExactExpression {
             // log<ˣ√y>(1 / y) = -x
             case let (.divide(1, .root(x, y1)), y2) where y1 == y2,
                  let (.root(x, y1), .divide(1, y2)) where y1 == y2:
-                if case let .n(a) = x { return .n(-a) }
-                return .subtract(.zero, x)
+                return -x
                 
-            // log<ˣ√a>(b) = xlog<a>(b)
-            case let (.root(x, a), b):
-                return ExactExpression.multiply(x, .log(a, b))._simplified()
+            // log<1/a>(1/b) = log<a>(b)
+            case let (.divide(.n(1), a), .divide(.n(1), b)):
+                return ExactExpression.log(a, b)._simplified()
                 
+            // log<1/a>(b) = -log<a>(b)
+            // log<a>(1/b) = -log<a>(b)
+            case let (.divide(.n(1), a), b),
+                 let (a, .divide(.n(1), b)):
+                return ExactExpression.subtract(.zero, .log(a, b))._simplified()
+                
+            // log<a^x>(b^x) = lob<a>(b)
+            case let (.power(a, x1), .power(b, x2)) where x1 == x2:
+                return ExactExpression.log(a, b)._simplified()
+                
+            // log<a^y>(b^x) = (x / y) * lob<a>(b)
+            case let (.power(a, x1), .power(b, x2)):
+                return ExactExpression.multiply(.divide(x2, x1), .log(a, b))._simplified()
+                
+            // log<b>(x^y) = ylog<b>(x)
+            // log<root<y>(b)>(x) = ylog<b>(x)
+            case let (b, .power(x, y)),
+                 let (.root(y, b), x):
+                return ExactExpression.multiply(y, .log(b, x))._simplified()
+                
+            // log<b^y>(x) = (1/y) * log<b>(x)
+            case let (.power(y, b), x):
+                return ExactExpression.multiply(.divide(.n(1), y), .log(b, x))._simplified()
+             
             // log<4>(x) = ½log₂(x)
             case let (.n(x), y) where !y.isNumber:
                 guard let perfectPower = x.perfectPower() else { return self }
                 return ExactExpression.multiply(.divide(.n(1), .n(perfectPower.exponent)), .log(.n(perfectPower.base), y))._simplified()
-
+                
                 
             // logᵪ(4) = 2logᵪ(2)
             case let (x, .n(y)) where !x.isNumber:
@@ -918,7 +1020,7 @@ public enum ExactExpression {
                     
                 case let (px?, _):
                     return ExactExpression.multiply(.divide(.n(1), .n(px.exponent)), .log(.n(px.base), .n(y)))._simplified()
-
+                    
                 case let (_, py?):
                     return ExactExpression.multiply(.n(py.exponent), .log(.n(x), .n(py.base)))._simplified()
                     
@@ -954,28 +1056,167 @@ public enum ExactExpression {
             case let (x1, .power(y, x2)) where x1 == x2:
                 return y
                 
-
+                
             // no simplification
             case let (a, b):
                 return .root(a, b)
                 
             }
-        
-        
+            
+            
         }
         
         return self
     }
+    
 }
+
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Expression evaluation
+
 public extension ExactExpression {
-    public static func ~= (lhs: Int, rhs: ExactExpression) -> Bool {
-        if case let .n(x) = rhs, x == lhs {
-            return true
+    
+    public func evaluate() -> Double {
+        switch self {
+        case let .add(a, b): return a.evaluate() + b.evaluate()
+        case let .subtract(a, b): return a.evaluate() - b.evaluate()
+        case let .multiply(a, b): return a.evaluate() * b.evaluate()
+        case let .divide(a, b): return a.evaluate() / b.evaluate()
+        case let .power(a, b): return pow(a.evaluate(), b.evaluate())
+        case let .log(a, b): return log10(b.evaluate()) / log10(a.evaluate())
+        case let .root(a, b):
+            let x = a.evaluate()
+            if x == 2 {
+                return sqrt(b.evaluate())
+            } else if x == 3 {
+                return cbrt(b.evaluate())
+            }
+            return pow(b.evaluate(), 1.0 / a.evaluate())
+        case let .n(a): return Double(a)
         }
-        return false
+    }
+    
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Other methods
+
+public extension ExactExpression {
+
+    public func contains(where predicate: (ExactExpression) -> Bool) -> Bool {
+        guard !predicate(self) else { return true }
+        
+        switch self {
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b),
+             let .log(a, b),
+             let .root(a, b):
+            if predicate(a) || predicate(b) {
+                return true
+            } else {
+                return a.contains(where: predicate) || b.contains(where: predicate)
+            }
+        default: return false
+        }
+    }
+    public func contains(_ expression: ExactExpression) -> Bool {
+        guard self != expression else { return true }
+        
+        switch self {
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b),
+             let .log(a, b),
+             let .root(a, b):
+            if a == expression || b == expression {
+                return true
+            } else {
+                return a.contains(expression) || b.contains(expression)
+            }
+        default: return false
+        }
+    }
+ 
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Operators
+
+public extension ExactExpression {
+    
+    // Binary arithmetic operators
+    public static func + (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return ExactExpression.add(lhs, rhs).simplified()
+    }
+    public static func - (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return ExactExpression.subtract(lhs, rhs).simplified()
+    }
+    public static func * (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return ExactExpression.multiply(lhs, rhs).simplified()
+    }
+    public static func / (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return ExactExpression.divide(lhs, rhs).simplified()
+    }
+    public static func ^ (lhs: ExactExpression, rhs: ExactExpression) -> ExactExpression {
+        return ExactExpression.power(lhs, rhs).simplified()
+    }
+    
+    // Compound assignment operators
+    public static func += (lhs: inout ExactExpression, rhs: ExactExpression) {
+        lhs = ExactExpression.add(lhs, rhs).simplified()
+    }
+    public static func -= (lhs: inout ExactExpression, rhs: ExactExpression) {
+        lhs = ExactExpression.subtract(lhs, rhs).simplified()
+    }
+    public static func *= (lhs: inout ExactExpression, rhs: ExactExpression) {
+        lhs = ExactExpression.multiply(lhs, rhs).simplified()
+    }
+    public static func /= (lhs: inout ExactExpression, rhs: ExactExpression) {
+        lhs = ExactExpression.divide(lhs, rhs).simplified()
+    }
+    public static func ^= (lhs: inout ExactExpression, rhs: ExactExpression) {
+        lhs = ExactExpression.power(lhs, rhs).simplified()
+    }
+    
+    // Prefix negative operator
+    public static prefix func -(expression: ExactExpression) -> ExactExpression {
+        if case let .n(x) = expression {
+            return .n(-x)
+        }
+        return .subtract(.n(0), expression)
+    }
+    
+}
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  ExpressibleByIntegerLiteral Conformance
+
+extension ExactExpression: ExpressibleByIntegerLiteral {
+    public typealias IntegerLiteralType = Int
+    
+    public init(integerLiteral value: ExactExpression.IntegerLiteralType) {
+        self = .n(value)
     }
 }
 
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Equatable Conformance
 
 extension ExactExpression: Equatable {
     public static func == (lhs: ExactExpression, rhs: ExactExpression) -> Bool {
@@ -993,7 +1234,13 @@ extension ExactExpression: Equatable {
     }
 }
 
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  CustomStringConvertible Conformance
+
 extension ExactExpression: CustomStringConvertible {
+    
     public var description: String {
         switch self {
         case let .add(a, b):
@@ -1002,7 +1249,8 @@ extension ExactExpression: CustomStringConvertible {
             return "-" + a.description
         case let .subtract(a, b):
             return "(" + a.description + " - " + b.description + ")"
-        case let .multiply(.n(a), b) where b.isLog || b.isRoot:
+        case let .multiply(.n(a), b),
+             let .multiply(b, .n(a)) where b.isLog || b.isRoot:
             return "\(a)" + b.description
             
         case let .multiply(a, b):
@@ -1042,6 +1290,7 @@ extension ExactExpression: CustomStringConvertible {
             return "\(a)"
         }
     }
+    
     public var literalDescription: String {
         switch self {
         case let .add(a, b):
@@ -1062,4 +1311,42 @@ extension ExactExpression: CustomStringConvertible {
             return ".n(\(a))"
         }
     }
+    
+    public var latex: String {
+        switch self {
+        case let .add(a, b):
+            return "\\left(" + a.latex + " + " + b.latex + "\\right)"
+        case let .subtract(0, n):
+            return "-" + n.latex
+        case let .subtract(a, b):
+            return "\\left(" + a.latex + ", " + b.latex + "\\right)"
+        case let .multiply(a, b):
+            return a.latex + "\\left(" + b.latex + "\\right)"
+        case let .divide(a, b):
+            return "\\frac{" + a.latex + "}{" + b.latex + "}"
+        case let .power(a, b):
+            return "\\left(" + a.latex + "\\right)^{" + b.latex + "}"
+        case let .log(a, b):
+            return "log_{" + a.latex + "}\\left(" + b.latex + "\\right)"
+        case let .root(a, b):
+            return "\\sqrt[" + a.latex + "]{" + b.latex + "}"
+        case let .n(a):
+            return "\(a)"
+        }
+    }
+    
 }
+
+
+//┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//┃ MARK: -  Exponentiation precedence and operator declaration
+
+precedencegroup ExponentiationPrecedence {
+    higherThan: MultiplicationPrecedence
+    lowerThan: BitwiseShiftPrecedence
+    associativity: right
+}
+infix operator ^: ExponentiationPrecedence
+
+

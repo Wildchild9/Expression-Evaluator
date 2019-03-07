@@ -54,7 +54,7 @@ import Foundation
 
 /////////////////
 print(String.separatorLine)
-let equation = "log<4>(64) / log<243>(27)" //"log(5) / log(4381)"
+let equation = "log<4>(64) / log<243>(27)"
 let expression = ExactExpression(equation)
 print(equation)
 print("=", expression)
@@ -66,7 +66,12 @@ print(expression.literalDescription)
 /////////////////
 print(String.separatorLine)
 
+var exp: ExactExpression = 5 ^ 3
+print(exp)
 
 
 print(ExactExpression("2log<3>(16)"))
-var n: Either<Either<Float, Int>, Double> = .left(.right(1))
+
+print(ExactExpression("log<4>(64) / log<243>(27)", simplify: false).latex)
+
+
