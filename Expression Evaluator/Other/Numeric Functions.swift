@@ -51,3 +51,10 @@ extension Int {
         return nil
     }
 }
+
+
+public func nsExpressionSolve(_ equation: String) -> Double? {
+    let mathExpression = NSExpression(format: equation.replacingOccurrences(of: "^", with: "**"))
+    let mathValue = mathExpression.expressionValue(with: nil, context: nil) as? Double
+    return mathValue
+}

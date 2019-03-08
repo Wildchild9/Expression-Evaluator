@@ -319,6 +319,30 @@ public extension Expression {
         }
         return false
     }
+    public var isAddition: Bool {
+        if case .add = self {
+            return true
+        }
+        return false
+    }
+    public var isSubtraction: Bool {
+        if case .divide = self {
+            return true
+        }
+        return false
+    }
+    public var isDivision: Bool {
+        if case .divide = self {
+            return true
+        }
+        return false
+    }
+    public var isMultiplication: Bool {
+        if case .multiply = self {
+            return true
+        }
+        return false
+    }
     public var isPower: Bool {
         if case .power = self {
             return true
@@ -336,6 +360,20 @@ public extension Expression {
             return true
         }
         return false
+    }
+    public var operands: (Expression, Expression)? {
+        switch self {
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b),
+             let .log(a, b),
+             let .root(a, b):
+            return (a, b)
+        case .n:
+            return nil
+        }
     }
 }
 
@@ -1252,7 +1290,6 @@ extension Expression: CustomStringConvertible {
         case let .multiply(.n(a), b),
              let .multiply(b, .n(a)) where b.isLog || b.isRoot:
             return "\(a)" + b.description
-            
         case let .multiply(a, b):
             return "(" + a.description + " * " + b.description + ")"
         case let .divide(a, b):
@@ -1319,19 +1356,23 @@ extension Expression: CustomStringConvertible {
         case let .subtract(0, n):
             return "-" + n.latex
         case let .subtract(a, b):
-            return "\\left(" + a.latex + ", " + b.latex + "\\right)"
+            return "\\left(" + a.latex + " - " + b.latex + "\\right)"
+        case let .multiply(.n(a), b) where b.isPower || b.isRoot:
+            return "\(a)" + b.latex
         case let .multiply(a, b):
-            return a.latex + "\\left(" + b.latex + "\\right)"
+            return "\\left(" + a.latex + " \\cdot " + b.latex + "\\right)"
         case let .divide(a, b):
             return "\\frac{" + a.latex + "}{" + b.latex + "}"
         case let .power(a, b):
             return "\\left(" + a.latex + "\\right)^{" + b.latex + "}"
         case let .log(a, b):
-            return "log_{" + a.latex + "}\\left(" + b.latex + "\\right)"
+            let strA = a.isDivision ? "\\left(\(a.latex)\\right)" : a.latex
+            let strB = b.isDivision ? "\\left(\(b.latex)\\right)" : b.latex
+            return "\\mathrm{log}_{" + strA + "}" + strB
         case let .root(a, b):
             return "\\sqrt[" + a.latex + "]{" + b.latex + "}"
         case let .n(a):
-            return "\(a)"
+            return a < 0 ? "\\left(\(a)\\right)" : "\(a)"
         }
     }
     
