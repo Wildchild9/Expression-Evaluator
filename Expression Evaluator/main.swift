@@ -55,7 +55,7 @@ import Foundation
 /////////////////
 print(String.separatorLine)
 let equation = "log<4>(64) / log<243>(27)"
-let expression = ExactExpression(equation)
+let expression = Expression(equation)
 print(equation)
 print("=", expression)
 print("=", expression.evaluate())
@@ -66,12 +66,12 @@ print(expression.literalDescription)
 /////////////////
 print(String.separatorLine)
 
-var exp: ExactExpression = 5 ^ 3
+var exp: Expression = 5 ^ 3
 print(exp)
 
 
-print(ExactExpression("2log<3>(16)"))
+print(Expression("2log<3>(16)"))
 
-print(ExactExpression("log<4>(64) / log<243>(27)", simplify: false).latex)
+print(Expression("log<4>(64) / log<243>(27)", simplify: false).latex)
 
 

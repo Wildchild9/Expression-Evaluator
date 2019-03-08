@@ -74,9 +74,6 @@ public extension StringProtocol where Index == String.Index {
         }
         return result
     }
-    public func removingExtraParantheses() -> String {
-        return replacingOccurrences(of: "(?<![\\)\\d])" + numberRegex.rGroup().rBracketed(), with: "$1", options: .regularExpression)
-    }
     
     public var nsRange: NSRange {
         return NSRange(startIndex..<endIndex, in: self)
@@ -86,6 +83,3 @@ public extension StringProtocol where Index == String.Index {
     }
 }
 
-public extension StringProtocol where Self.Index == String.Index {
-    
-}
