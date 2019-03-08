@@ -22,8 +22,8 @@ public enum Operator: CaseIterable {
     public static let allOperators = Operator.allCases.map { $0.symbol }
     public static let allOperatorsString = allOperators.joined()
     public static let groupedByPrecedence = [(operators: [Operator.exponentiation],    associativity: Associativity.right),
-                                             (operators: [.addition, .subtraction],    associativity: .left), 
-                                             (operators: [.division, .multiplication], associativity: .left)]
+                                             (operators: [.division, .multiplication], associativity: .left),
+                                             (operators: [.addition, .subtraction],    associativity: .left)]
     
     public var symbol: String {
         switch self {

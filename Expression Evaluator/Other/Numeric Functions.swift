@@ -28,7 +28,7 @@ import Foundation
 
 
 extension Int {
-    @_transparent public func perfectPower() -> (base: Int, exponent: Int)? {
+    @_transparent public func asPower() -> (base: Int, exponent: Int)? {
         for base in 2... {
             let squared = Int(pow(Double(base), 2.0))
             
