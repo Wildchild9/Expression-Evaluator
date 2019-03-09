@@ -29,7 +29,6 @@ public enum Expression {
     public static let y = x
     public static let variable = x
 
-
     // Initializer
     public init (_ string: String, simplify: Bool = true) {
 
@@ -273,7 +272,7 @@ public extension Expression {
         
         // Space binary operators
         do {
-            str = str.replacingOccurrences(of: rOr(exactNumberRegex, "\\)") + anyOperator.rGroup() + rOr(exactNumberRegex, "(?:\\(|" + anyFunction + ")", group: .positiveLookbehind), with: "$1 $2 ", options: .regularExpression)
+            str = str.replacingOccurrences(of: rOr(exactNumberRegex, "\\)", "(?:x|X)") + anyOperator.rGroup() + rOr(exactNumberRegex, "(?:\\(|" + anyFunction + "|x|X)", group: .positiveLookbehind), with: "$1 $2 ", options: .regularExpression)
             
             
             str = str.replacingOccurrences(of: "(?<=[^\\s\\d])" + anyOperator.rGroup() + "(?=[^\\s\\d])", with: "$1 $2 $3", options: .regularExpression)
@@ -510,7 +509,6 @@ public extension Expression {
 
 public extension Expression {
     public mutating func simplify() {
-
         switch self {
         // Variable
         case .x, .n:
@@ -762,7 +760,7 @@ public extension Expression {
             // x * (a / b) = ((x / GCD(x, b)) * a) / (b / GCD(x, b))
             case let (.n(x), .divide(a, .n(b))),
                  let (.divide(a, .n(b)), .n(x)):
-                let gcdBX = lcm(b, x)
+                let gcdBX = gcd(b, x)
                 self = (.n(x / gcdBX) * a) / .n(b / gcdBX)
                 simplify()
                 
@@ -776,6 +774,13 @@ public extension Expression {
                 }
                 self = x1 ^ (1 + y)
                 simplify()
+                
+//            // TODO: Record addition
+//            // a * (log<x>(y) / b) = (a / b) * log<x>(y)
+//            case let (a, .divide(.log(x, y), b)),
+//                 let (.divide(.log(x, y), b), a):
+//                self = (a / b) * .log(x, y)
+//                simplify()
                 
             // (1 / y) * x = x / y
             case let (.divide(1, den), num),
@@ -855,6 +860,8 @@ public extension Expression {
                 self = .n(b) ^ (.n(power.exponent) + c)
                 simplify()
                 
+            
+                
             // log<x>(a) * log<a>(y) = log<x>(y)
             case let (.log(x, a), .log(b, y)) where a == b:
                 self = .log(x, y)
@@ -874,8 +881,6 @@ public extension Expression {
             
             lhs.simplify()
             rhs.simplify()
-            
-            self = lhs / rhs
             
             switch (lhs, rhs) {
             // x / 0 = NaN
@@ -1106,6 +1111,12 @@ public extension Expression {
                 self = (x1 / x2) * .log(b, a)
                 simplify()
                 
+//            // (a * log<x>(y)) / b = (a / b) * log<x>(y)
+//            case let (.multiply(a, .log(x, y)), b),
+//                 let (.multiply(.log(x, y), a), b):
+//                self = (a / b) * .log(x, y)
+//                simplify()
+                
             // x / log<a>(b) = xlog<b>(a)
             case let (x, .log(a, b)):
                 self = x * .log(b, a)
@@ -1162,8 +1173,11 @@ public extension Expression {
                 self = y
                 
             // x ^ alogᵪy = y ^ a
-            case let (x1, .multiply(a, .log(x2, y))) where x1 == x2:
+            case let (x1, .multiply(a, .log(x2, y))) where x1 == x2,
+                 let (x1, .multiply(.log(x2, y), a)) where x1 == x2:
                 self = y ^ a
+                
+            
                 
             // (a ^ b) ^ c = a ^ bc
             case let (.power(a, b), c):
@@ -1249,6 +1263,22 @@ public extension Expression {
                 self = (1 / y) * .log(b, x)
                 simplify()
                 
+            // log<x>(xy) = 1 + log<x>(y)
+            case let (x1, .multiply(x2, y)) where x1 == x2,
+                 let (x1, .multiply(y, x2)) where x1 == x2:
+                self = 1 + .log(x1, y)
+                simplify()
+                
+            // log<x>(x / y) = 1 - log<x>(y)
+            case let (x1, .divide(x2, y)) where x1 == x2:
+                self = 1 - .log(x1, y)
+                simplify()
+                
+            // log<x>(x / y) = log<x>(y) - 1
+            case let (x1, .divide(x2, y)) where x1 == x2:
+                self = .log(x1, y) - 1
+                simplify()
+                
             // log₂₇(4) = ⅔log₃(2)
             case let (.n(x), .n(y)):
                 let powerX = x.asPower()
@@ -1280,14 +1310,19 @@ public extension Expression {
             case let (.n(x), y):
                 guard let perfectPower = x.asPower() else { return }
                 self = (1 / .n(perfectPower.exponent)) * .log(.n(perfectPower.base), y)
-                simplify()
+                if !y.isVariable {
+                    simplify()
+                }
                 
                 
             // logᵪ(4) = 2logᵪ(2)
             case let (x, .n(y)):
                 guard let perfectPower = y.asPower() else { return }
                 self = .n(perfectPower.exponent) * .log(x, .n(perfectPower.base))
-                simplify()
+                if !x.isVariable {
+                    simplify()
+                }
+                
                 
                 
             // No simplification
@@ -1296,6 +1331,7 @@ public extension Expression {
                 
             }
             
+        // Root
         case var .root(lhs, rhs):
         
             lhs.simplify()
@@ -1423,6 +1459,23 @@ public extension Expression {
         default: return false
         }
     }
+    public func containsVariable() -> Bool {
+        switch self {
+        case .x:
+            return true
+        case let .add(a, b),
+             let .subtract(a, b),
+             let .multiply(a, b),
+             let .divide(a, b),
+             let .power(a, b),
+             let .log(a, b),
+             let .root(a, b):
+            return a.containsVariable() || b.containsVariable()
+        default:
+            return false
+        }
+        
+    }
  
 }
 
@@ -1523,53 +1576,61 @@ extension Expression: Equatable {
 //┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //┃ MARK: -  CustomStringConvertible Conformance
 
-extension Expression: CustomStringConvertible {
+extension Expression: CustomStringConvertible, CustomDebugStringConvertible {
     
+    public var debugDescription: String {
+        return description
+    }
     public var description: String {
+        return _description.strippingOutermostBraces()
+    }
+    
+    private var _description: String {
         switch self {
         case let .add(a, b):
-            return "(" + a.description + " + " + b.description + ")"
+            return "(" + a._description + " + " + b._description + ")"
+        case let .subtract(.n(0), .root(a, b)) where a.isNumber || a.isVariable:
+            return "-" + Expression.root(a, b)._description
         case let .subtract(.n(0), a):
-            return "-" + a.description
+            return "-" + a._description
         case let .subtract(a, b):
-            return "(" + a.description + " - " + b.description + ")"
+            return "(" + a._description + " - " + b._description + ")"
         case let .multiply(.n(a), b),
              let .multiply(b, .n(a)) where b.isLog || b.isRoot || b.isVariable:
-            return "\(a)" + b.description
+            return "\(a)" + b._description
         case let .multiply(a, b):
-            return "(" + a.description + " * " + b.description + ")"
+            return "(" + a._description + " * " + b._description + ")"
         case let .divide(a, b):
-            return "(" + a.description + " / " + b.description + ")"
+            return "(" + a._description + " / " + b._description + ")"
         case let .power(a, b):
-            return "(" + a.description + " ^ " + b.description + ")"
+            return "(" + a._description + " ^ " + b._description + ")"
         case let .log(base, n):
-            var nStr = n.description
+            var nStr = n._description
             if case .n = n { nStr = "(\(nStr))" }
             if case let .n(a) = base {
                 let subscriptDict: [Character: String] = ["0" : "₀", "1" : "₁", "2" : "₂", "3" : "₃", "4" : "₄", "5" : "₅", "6" : "₆", "7" : "₇", "8" : "₈", "9" : "₉", "-" : "₋"]
                 return "log" + "\(a)".reduce(into: "") { $0 += subscriptDict[$1]! } + nStr
             }
             
-            return "log<" + base.description + ">" + nStr
+            return "log<" + base._description + ">" + nStr
                         
         case let .root(n, root):
-            var rootStr = root.description
+            var rootStr = root._description
             if case .n = root { rootStr = "(\(rootStr))" }
             if case .x = n {
                 return "ˣ√" + rootStr
             }
             if case let .n(a) = n {
                 switch a {
-                case 2: return "√(" + root.description + ")"
-                case 3: return "∛(" + root.description + ")"
-                case 4: return "∜(" + root.description + ")"
+                case 2: return "√(" + root._description + ")"
+//                case 3: return "∛(" + root._description + ")"
+//                case 4: return "∜(" + root._description + ")"
                 default:
                     let superscriptDict: [Character: String]  = ["0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻"]
-                    
-                    return "\(a)".reduce(into: "") { $0 += superscriptDict[$1]! } + "√" + rootStr
+                    return "\(a)".reduce(into: "") { $0 += superscriptDict[$1]! } + "͟√" + rootStr
                 }
             }
-            return "root<" + n.description + ">" + rootStr
+            return "root<" + n._description + ">" + rootStr
 
         case let .n(a):
             return "\(a)"
@@ -1635,17 +1696,11 @@ extension Expression: CustomStringConvertible {
                 return "-x" + n._latex.dropFirst()
             }
             return "x" + n._latex
-            
-        
-
-             
-            
         case let .multiply(a, b):
             return "\\left(" + a._latex + " \\cdot " + b._latex + "\\right)"
         case let .divide(a, b):
             return "\\\\frac{" + a._latex.strippingOutermostBraces() + "}{" + b._latex.strippingOutermostBraces() + "}"
         case let .power(a, b):
-            print(b)
             return a._latex + "^{" + b._latex.strippingOutermostBraces() + "}"
         case let .log(a, b):
             let strA = a.isDivision || a.isPower || a.isRoot ? "\\left(\(a._latex)\\right)" : a._latex

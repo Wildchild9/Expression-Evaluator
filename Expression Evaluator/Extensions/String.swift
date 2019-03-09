@@ -35,7 +35,7 @@ public extension String {
     
     
     public func strippingOutermostBraces() -> String {
-        print(self)
+        
         let str = hasPrefix("\\left") ? dropFirst(5) : self[...]
         guard let firstCharacter = str.first else { return self }
         let braces: [(opening: Character, closing: Character)] = [("(", ")"), ("[", "]"), ("{", "}"), ("<", ">")]
@@ -59,10 +59,10 @@ public extension String {
             return self
         }
         if hasSuffix("\\right\(bracePair.closing)") {
-            print(String(str[str.index(after: str.startIndex)..<str.index(str.endIndex, offsetBy: -7)]))
+            
             return String(str[str.index(after: str.startIndex)..<str.index(str.endIndex, offsetBy: -7)])
         }
-        print(String(str[index(after: startIndex)..<index(before: endIndex)]))
+
         return String(str[index(after: startIndex)..<index(before: endIndex)])
     }
 }
