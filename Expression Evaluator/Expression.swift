@@ -118,6 +118,7 @@ public extension Expression {
             
         // Integer
         case let s where s.allSatisfy({ "0123456789".contains($0) }):
+    
             guard let n = Int(s) else {
                 fatalError("Invalid format for expression")
             }
@@ -186,7 +187,6 @@ public extension Expression {
         default:
             break
         }
-        
         fatalError("Invalid format for expression")
     }
     private static func reduceExpressionArray(_ arr: inout [Either<Expression, Operator>],
@@ -275,88 +275,13 @@ public extension Expression {
             str = str.replacingOccurrences(of: rOr(exactNumberRegex, "\\)", "(?:x|X)") + anyOperator.rGroup() + rOr(exactNumberRegex, "(?:\\(|" + anyFunction + "|x|X)", group: .positiveLookbehind), with: "$1 $2 ", options: .regularExpression)
             
             
-            str = str.replacingOccurrences(of: "(?<=[^\\s\\d])" + anyOperator.rGroup() + "(?=[^\\s\\d])", with: "$1 $2 $3", options: .regularExpression)
+            str = str.replacingOccurrences(of: "(?<=[^xX\\s\\d])" + anyOperator.rGroup() + "(?=[^xX\\s\\d])", with: "$1 $2 $3", options: .regularExpression)
             
         }
         
-        // Add necessary brackets for adjactent multiplication
-//        do {
-//            // log & root
-//            do {
-//                let matches = str.regex.matches(pattern: "(\(exactNumberRegex)(?:x|X)?|x|X)(?=log|root)")
-//                var braceIndices = [(character: Character, index: String.Index)]()
-//                for match in matches.reversed() {
-//
-//                    var angleCount = 0
-//                    let angleString = str[match.endIndex...].drop { $0 != "<"}
-//                    var index = match.startIndex
-//                    braceIndices.append((character: "(", index: match.startIndex))
-//                    for (c, i) in zip(angleString, angleString.indices) {
-//                        switch c {
-//                        case "<": angleCount += 1
-//                        case ">": angleCount -= 1
-//                        default: break
-//                        }
-//                        if angleCount == 0 { index = i; break }
-//                    }
-//                    guard angleCount == 0, str[str.index(after: index)] == "(" else { fatalError("Invalid format") }
-//
-//                    var braceCount = 0
-//                    let braceString = str[str.index(after: index)...]
-//                    var closingIndex = index
-//                    for (c, i) in zip(braceString, braceString.indices) {
-//                        switch c {
-//                        case "(": braceCount += 1
-//                        case ")": braceCount -= 1
-//                        default: continue
-//                        }
-//                        if braceCount == 0 { closingIndex = i; break }
-//                    }
-//                    
-//                    braceIndices.append((character: ")", index: str.index(after: closingIndex)))
-//
-//                }
-//                for brace in braceIndices.sorted(by: { $0.index > $1.index }) {
-//                    str.insert(brace.character, at: brace.index)
-//                }
-//            }
-//            // sqrt and cbrt
-//            do {
-//                let matches = str.regex.matches(pattern: "(\(exactNumberRegex)(?:x|X)?|x|X)(?=sqrt|cbrt)")
-//                var braceIndices = [(character: Character, index: String.Index)]()
-//                for match in matches.reversed() {
-//                    braceIndices.append((character: "(", index: match.startIndex))
-//                    var braceCount = 0
-//                    let braceString = str[match.startIndex...].drop { $0 != "(" }
-//                    var closingIndex = match.startIndex
-//                    for (c, i) in zip(braceString, braceString.indices) {
-//                        switch c {
-//                        case "(": braceCount += 1
-//                        case ")": braceCount -= 1
-//                        default: continue
-//                        }
-//                        if braceCount == 0 { closingIndex = i; break }
-//                    }
-//
-//                    braceIndices.append((character: ")", index: str.index(after: closingIndex)))
-//
-//                }
-//                for brace in braceIndices.sorted(by: { $0.index > $1.index }) {
-//                    str.insert(brace.character, at: brace.index)
-//                }
-//            }
-//            // 3x
-//            do {
-//                str = str.replacingOccurrences(of: "(\(exactNumberRegex))(x|X)(?!root|log|sqrt|cbrt)", with: "($1 * $2)", options: .regularExpression)
-//            }
-//        }
-        
-        
-        
-        
         // Replace adjacent variable mutiplication with star operator
         do {
-            str = str.regex.replacing(pattern: "(?<=[^\\<\\+\\s\\(])(x|X)", with: " * x")
+            str = str.regex.replacing(pattern: "(?<=[^\\<\\+\\s\\(-])(x|X)", with: " * x")
             str = str.regex.replacing(pattern: "(x|X)(?=[^\\s\\>\\)])", with: "x * ")
         }
         
@@ -366,6 +291,9 @@ public extension Expression {
             
             str = str.replacingOccurrences(of: parentheticMultiplicationPattern, with: "$1$2$3 * ", options: .regularExpression)
             
+            str = str.replacingOccurrences(of: "(?<=\\)|\\d|x|X)(\\()", with: " * (", options: .regularExpression)
+            str = str.replacingOccurrences(of: "(\\))(?=\\(|\\w)", with: ") * ", options: .regularExpression)
+
             str = str.replacingOccurrences(of: ")(", with: ") * (")
         }
         // Replace adjacent multiplication with star operator
@@ -381,7 +309,7 @@ public extension Expression {
             if let firstCharacter = str.first, firstCharacter == "-" {
                 str.replaceSubrange(str.startIndex...str.startIndex, with: "0 - ")
             }
-            str = str.replacingOccurrences(of: "-\\(", with: "0 - (", options: .regularExpression)
+            str = str.replacingOccurrences(of: "-(\\(|x|X)", with: "0 - $1", options: .regularExpression)
         }
         
         // Remove prefix positive operator
@@ -396,6 +324,7 @@ public extension Expression {
         
         str = str.replacingOccurrences(of: "\\([\\s\\)\\(]*\\)", with: "")
         
+        print(str)
         return str
         
     }

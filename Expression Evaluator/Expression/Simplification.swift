@@ -145,7 +145,7 @@ public extension Expression {
                 self = .n(-y)
                 return
                 
-                // x - (x + y) = -y
+            // x - (x + y) = -y
             // (x - y) - x = -y
             case let (x1, .add(x2, y))      where x1 == x2,
                  let (x1, .add(y, x2))      where x1 == x2,
@@ -153,7 +153,7 @@ public extension Expression {
                 self = -y
                 return
                 
-                // (x + y) - x = y
+            // (x + y) - x = y
             // x - (x - y) = y
             case let (.add(x1, y), x2)      where x1 == x2,
                  let (.add(y, x1), x2)      where x1 == x2,
@@ -768,16 +768,23 @@ public extension Expression {
                 self = x
                 return
                 
+            
             // (x / y) ^ -e = (y / x) ^ e
-            case let (.divide(x, y), .n(e)) where e < 0:
-                self = (y / x) ^ .n(-e)
+            case let (.divide(x, y), e) where e.isNegative:
+                self = (y / x) ^ -e
                 simplify()
                 return
                 
-                // Not sure if this is a good simplification
+            // Not sure if this is a good simplification
             // a ^ -b = 1 / (a ^ b)
             case let (a, b) where b.isNegative:
                 self = 1 / (a ^ -b)
+                simplify()
+                return
+                
+            //TODO: NEW
+            case let (a, .divide(1, b)):
+                self = .root(b, a)
                 simplify()
                 return
                 
@@ -812,7 +819,7 @@ public extension Expression {
                     //return
                 }
                 return
-                
+            
             // No simplification
             case let (a, b):
                 self = a ^ b
@@ -833,6 +840,11 @@ public extension Expression {
             // log<...1> = NaN
             case let (.n(x), _) where x < 2:
                 fatalError("Cannot find the value of a log with an integral base less than 2")
+            
+            // NEW
+            case (_, 1):
+                self = 1
+                return
                 
             // logᵪ(x) = 1
             case let (x, y) where x == y:
@@ -984,13 +996,18 @@ public extension Expression {
             self = .root(lhs, rhs)
             
             switch (lhs, rhs) {
-            // log<...0> = NaN
+            // root<...0> = NaN
             case let (.n(x), _) where x <= 0:
-                fatalError("Cannot find the value of the nth root where n is less than 2")
+                fatalError("Cannot find the value of the nth root where n is less than or equal to 0")
                 
             // ¹√x = x
             case let (1, x):
                 self = x
+                return
+                
+            // NEW
+            case (_, 1):
+                self = 1
                 return
                 
             // √25 = 5

@@ -31,6 +31,7 @@
 		C25562B4222885A70029EDC7 /* Numeric Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B3222885A70029EDC7 /* Numeric Functions.swift */; };
 		C25562B62228885C0029EDC7 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B52228885C0029EDC7 /* Expression.swift */; };
 		C29C907D221CAEBF00C85804 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C907C221CAEBF00C85804 /* main.swift */; };
+		C2B3F3AE2236F07C001F864F /* Term Extraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B3F3AD2236F07C001F864F /* Term Extraction.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,6 +72,7 @@
 		C25562B52228885C0029EDC7 /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		C29C9079221CAEBF00C85804 /* Expression Evaluator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Expression Evaluator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C29C907C221CAEBF00C85804 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		C2B3F3AD2236F07C001F864F /* Term Extraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Term Extraction.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +97,7 @@
 				C214DD1D2236A02B007BDB3D /* Operators.swift */,
 				C214DD1F2236A0A5007BDB3D /* Simplification.swift */,
 				C214DD212236A1BF007BDB3D /* Contains Methods.swift */,
+				C2B3F3AD2236F07C001F864F /* Term Extraction.swift */,
 			);
 			path = Expression;
 			sourceTree = "<group>";
@@ -264,6 +267,7 @@
 				C214DD2E2236A318007BDB3D /* ExpressibleByIntegerLiteral.swift in Sources */,
 				C22F8ABF2224C3F800F2E358 /* String Integer Subscript.swift in Sources */,
 				C22F8AB22224C0F500F2E358 /* Operator.swift in Sources */,
+				C2B3F3AE2236F07C001F864F /* Term Extraction.swift in Sources */,
 				C23E83D62225F7DC00A52F16 /* Benchmarking.swift in Sources */,
 				C214DD2C2236A28B007BDB3D /* Literal Description.swift in Sources */,
 				C22F8AAA22203EF500F2E358 /* Regex Extensions.swift in Sources */,

@@ -171,7 +171,17 @@ public extension Expression {
                 equations.append(equation)
                 
             default:
-                return [self]
+                let extractedTerm = rhs.extractNonVariableTerms()
+                switch extractedTerm {
+                case .none:
+                    return [self]
+                case let .singleTerm(a, x: b):
+                    lhs -= a
+                    rhs = b
+                    equations.append(equation)
+                case .allTerms:
+                    fatalError("Impossible")
+                }
             }
             
             
