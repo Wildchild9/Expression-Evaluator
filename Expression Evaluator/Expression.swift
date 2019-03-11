@@ -35,7 +35,7 @@ public enum Expression {
         let formattedExpression = Expression.formatExpression(string)
         self = Expression.createExpression(from: formattedExpression)
         if simplify {
-            self = self.simplified()
+            self.simplify()
         }
     }
     
