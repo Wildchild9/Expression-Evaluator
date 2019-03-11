@@ -67,12 +67,12 @@ public extension Expression {
     }
     
     public mutating func negate() {
-        if case let .n(x) = expression {
+        if case let .n(x) = self {
             self = .n(-x)
-        } else if case let .subtract(0, x) = expression {
+        } else if case let .subtract(0, x) = self {
             self = x
         } else {
-            self = .subtract(.zero, expression)
+            self = .subtract(.zero, self)
         }
     }
     

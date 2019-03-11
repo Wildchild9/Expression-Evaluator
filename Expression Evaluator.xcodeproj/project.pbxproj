@@ -28,7 +28,6 @@
 		C22F8AC72224C77400F2E358 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8AC62224C77400F2E358 /* String.swift */; };
 		C22F8EF3222ED2B3009897F8 /* Either.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22F8EF2222ED2B3009897F8 /* Either.swift */; };
 		C23E83D62225F7DC00A52F16 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23E83D52225F7DC00A52F16 /* Benchmarking.swift */; };
-		C24A985B22336DF100F512E3 /* Simplification.swift in Sources */ = {isa = PBXBuildFile; fileRef = C24A985A22336DF100F512E3 /* Simplification.swift */; };
 		C25562B4222885A70029EDC7 /* Numeric Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B3222885A70029EDC7 /* Numeric Functions.swift */; };
 		C25562B62228885C0029EDC7 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B52228885C0029EDC7 /* Expression.swift */; };
 		C29C907D221CAEBF00C85804 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C907C221CAEBF00C85804 /* main.swift */; };
@@ -68,7 +67,6 @@
 		C22F8AC62224C77400F2E358 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		C22F8EF2222ED2B3009897F8 /* Either.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Either.swift; sourceTree = "<group>"; };
 		C23E83D52225F7DC00A52F16 /* Benchmarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmarking.swift; sourceTree = "<group>"; };
-		C24A985A22336DF100F512E3 /* Simplification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simplification.swift; sourceTree = "<group>"; };
 		C25562B3222885A70029EDC7 /* Numeric Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Numeric Functions.swift"; sourceTree = "<group>"; };
 		C25562B52228885C0029EDC7 /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		C29C9079221CAEBF00C85804 /* Expression Evaluator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Expression Evaluator"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -153,7 +151,6 @@
 		C23E83D42225F7C300A52F16 /* Other */ = {
 			isa = PBXGroup;
 			children = (
-				C24A985A22336DF100F512E3 /* Simplification.swift */,
 				C25562B3222885A70029EDC7 /* Numeric Functions.swift */,
 				C23E83D52225F7DC00A52F16 /* Benchmarking.swift */,
 			);
@@ -263,7 +260,6 @@
 				C25562B4222885A70029EDC7 /* Numeric Functions.swift in Sources */,
 				C22F8EF3222ED2B3009897F8 /* Either.swift in Sources */,
 				C214DD2A2236A281007BDB3D /* Latex.swift in Sources */,
-				C24A985B22336DF100F512E3 /* Simplification.swift in Sources */,
 				C22F8AC72224C77400F2E358 /* String.swift in Sources */,
 				C214DD2E2236A318007BDB3D /* ExpressibleByIntegerLiteral.swift in Sources */,
 				C22F8ABF2224C3F800F2E358 /* String Integer Subscript.swift in Sources */,

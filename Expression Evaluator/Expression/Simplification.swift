@@ -588,7 +588,7 @@ public extension Expression {
             case let (.divide(x, y), .n(e)) where e < 0:
                 return ((y / x) ^ .n(-e)).simplified()
                 
-                // Not sure if this is a good simplification
+            // Not sure if this is a good simplification
             // a ^ -b = 1 / (a ^ b)
             case let (a, b) where b.isNegative:
                 return (1 / (a ^ -b)).simplified()
@@ -739,7 +739,6 @@ public extension Expression {
         // Root
         case let .root(lhs, rhs):
             
-            
             switch (lhs.simplified(), rhs.simplified()) {
             // log<...0> = NaN
             case let (.n(x), _) where x <= 0:
@@ -770,3 +769,4 @@ public extension Expression {
         return self
     }
 }
+
