@@ -28,7 +28,7 @@ var expression = Expression(equation, simplify: false) {
         print(expression)
     }
 }
-expression.simplify()
+expression = expression.simplified()
 print(equation)
 print("=", expression)
 print("=", expression.evaluate())
@@ -49,7 +49,7 @@ let exp2 = Expression("4 * 2 ^ (2x)")
 
 
 extension Expression {
-    @discardableResult func solveForX(printResults: Bool = true) -> [Expression]? {
+    @discardableResult func solveForX(printResults: Bool = true, showingSteps: Bool = false) -> [Expression]? {
         guard containsVariable() else { return nil }
         
         let expression = simplified()
@@ -57,7 +57,7 @@ extension Expression {
             print("y =", expression)
         }
         let equation = Equation(expression: expression)
-        let results = equation.isolated()
+        let results = equation.isolated(showingSteps: showingSteps)
         
         
         guard !results.contains(where: { $0.left != .x }) else {
@@ -67,7 +67,7 @@ extension Expression {
             return nil
         }
         
-        let solutions = results.map { $0.right }
+        let solutions = results.map { $0.right.simplified() }
         if printResults {
             print("x =", solutions.map { "\($0)".replacingOccurrences(of: "x", with: "y") }.joined(separator: ", "))
         }
@@ -87,8 +87,8 @@ extension Expression {
             left = expression
         }
         mutating func simplify() {
-            left.simplify()
-            right.simplify()
+            left = left.simplified()
+            right = right.simplified()
         }
         func simplified() -> Equation {
             var simplifiedEquation = self
@@ -96,7 +96,7 @@ extension Expression {
             return simplifiedEquation
         }
         
-        func isolated() -> [Equation] {
+        func isolated(showingSteps: Bool = false) -> [Equation] {
             
             var equations = [Equation]()
             var equation = self
@@ -108,7 +108,9 @@ extension Expression {
                 get { return equation.left }
                 set { equation.left = newValue }
             }
-            print(self)
+            if showingSteps {
+                print(self)
+            }
             switch lhs {
                 
             // a ^ log<b>(c) = y
@@ -116,6 +118,12 @@ extension Expression {
             case let .power(a, .log(b, c)) where !b.containsVariable():
                 rhs = .log(b, rhs)
                 lhs = .log(b, c) * .log(b, a)
+                equations.append(equation)
+           
+            case let .power(a, .multiply(m, .log(b, c))) where !b.containsVariable(),
+                 let .power(a, .multiply(.log(b, c), m)) where !b.containsVariable():
+                rhs = .log(b, rhs)
+                lhs = m * .log(b, c) * .log(b, a)
                 equations.append(equation)
                 
             // aˣ = y
@@ -213,9 +221,25 @@ extension Expression {
     }
 }
 
+print(Expression("5log<4>(x)"))
 
-//
+
 var eq = Expression("x^(5log<4>(x))")
+
+
+
+
+
+let n = eq.evaluate(withX: 10)
+print(eq.simplified())
+
 eq.solveForX()
+print(eq.solveForX()!.first!.latex)
+//let e = pow(2, 1.0 / log(2))
+//print("e =", pow(2, 1.0 / log(2)))
+//print("e =", M_E)
 
 
+var expression10 = Expression("log<2>(3)-log<2>(27)+log<2>(x+2)")
+print(expression10.evaluate(withX: 10))
+print(expression10.solveForX()!.first!.evaluate(withX: 0.4150374992788439))
