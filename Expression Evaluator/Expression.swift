@@ -291,8 +291,8 @@ public extension Expression {
             
             str = str.replacingOccurrences(of: parentheticMultiplicationPattern, with: "$1$2$3 * ", options: .regularExpression)
             
-            str = str.replacingOccurrences(of: "(?<=\\)|\\d|x|X)(\\()", with: " * (", options: .regularExpression)
-            str = str.replacingOccurrences(of: "(\\))(?=\\(|\\w)", with: ") * ", options: .regularExpression)
+            str = str.replacingOccurrences(of: #"(?<=\)|\d|x|X)(\()"#, with: " * (", options: .regularExpression)
+            str = str.replacingOccurrences(of: #"(\))(?=\(|\\w)"#, with: ") * ", options: .regularExpression)
 
             str = str.replacingOccurrences(of: ")(", with: ") * (")
         }
@@ -309,7 +309,9 @@ public extension Expression {
             if let firstCharacter = str.first, firstCharacter == "-" {
                 str.replaceSubrange(str.startIndex...str.startIndex, with: "0 - ")
             }
-            str = str.replacingOccurrences(of: "-(\\(|x|X)", with: "0 - $1", options: .regularExpression)
+            str = str.replacingOccurrences(of: #"-(\(|x|X)"#, with: "0 - $1", options: .regularExpression)
+            
+            str = str.replacingOccurrences(of: #"-(\#(exactNumberRegex))"#, with: "(0 - $1)", options: .regularExpression)
         }
         
         // Remove prefix positive operator
@@ -324,7 +326,6 @@ public extension Expression {
         
         str = str.replacingOccurrences(of: "\\([\\s\\)\\(]*\\)", with: "")
         
-        print(str)
         return str
         
     }

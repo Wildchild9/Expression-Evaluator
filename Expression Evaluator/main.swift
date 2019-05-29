@@ -35,50 +35,79 @@ print(expression.literalDescription)
 print(String.separatorLine)
 
 let exp1 = Expression("x ^ (3log<x>(2))")
-print(exp1)
+exp1.solveForX(showingSteps: true)
+
 
 ///////////////////
 print(String.separatorLine)
 
 let exp2 = Expression("4 * 2 ^ (2x)")
 
-
-
+///////////////////
+print(String.separatorLine)
 print(Expression("5log<4>(x)"))
 
+///////////////////
+print(String.separatorLine)
 
-var eq = Expression("x^(5log<4>(x))")
+let eq1 = Expression("x^(5log<4>(x))")
+let solutions = eq1.solveForX(showingSteps: true)!
+
+///////////////////
+print(String.separatorLine)
+
+var exp3 = Expression("log<2>(5 + 2x) - log<2>(4 - x)")
+
+print(exp3)
+exp3.replaceX(with: .n(27) / .n(10)) // 2.7
+print("=", exp3)
+exp3.simplify()
+print("=", exp3)
+print("=", exp3.evaluate())
+
+
+///////////////////
+print(String.separatorLine)
+
+let exp4: Expression = "(5 ^ (7 / x) + 1) / 2"
+exp4.solveForX(showingSteps: true)
+
+///////////////////
+print(String.separatorLine)
+
+let eq5 = "((x + 1) ^ (-1 / 4)) * ((x - 1) ^ (-1 / 2)) + ((x + 1) ^ (3 / 4)) * ((x - 1) ^ (1 / 2))"
+var exp5 = Expression(eq5, simplify: false)
+print(exp5)
+print(exp5.latex)
+exp5.simplify()
+print(exp5)
+print(exp5.latex)
+
+///////////////////
+print(String.separatorLine)
+
+///////////////////
+print(String.separatorLine)
+
+
+///////////////////
+print(String.separatorLine)
+
+///////////////////
+print(String.separatorLine)
+
+
+///////////////////
+print(String.separatorLine)
+
+
+///////////////////
+print(String.separatorLine)
 
 
 
-
-
-let n = eq.evaluate(withX: 10)
-print(eq.simplified())
-
-eq.solveForX()
-
-print(eq.solveForX()!.first!.latex)
-//let e = pow(2, 1.0 / log(2))
-//print("e =", pow(2, 1.0 / log(2)))
-//print("e =", M_E)
-
-
-var expression10 = Expression("log<2>(3)-log<2>(27)+log<2>(x+2)")
-print(expression10.evaluate(withX: 10))
-print(expression10.solveForX()!.first!.evaluate(withX: 0.4150374992788439))
 
 // Convert roots to exponents with fractions
-// Only convert to roots in printing
 
 // Add simplifications when performing an operation when passing around terms
-
-var exp5: Expression = 5 * (.x - 3 * (2 - 4 - .x))
-print(exp5)
-print(exp5.extractNonVariableTerms())
-print(Expression("log<2>(5)"))
-
-print(Expression("-x").literalDescription)
-
-print(Expression("4(-x)log<5>(3)"))
 

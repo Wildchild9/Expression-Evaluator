@@ -9,19 +9,21 @@
 import Foundation
 
 public extension Expression {
+    
+    
     @discardableResult public func solveForX(printResults: Bool = true, showingSteps: Bool = false) -> [Expression]? {
         guard containsVariable() else { return nil }
         
-        let expression = simplified()
-        if printResults {
+        let expression = self.simplified()
+        if printResults || showingSteps {
             print("y =", expression)
         }
         let equation = Equation(expression: expression)
         let results = equation.isolated(showingSteps: showingSteps)
         
         
-        guard !results.contains(where: { $0.left != .x }) else {
-            if printResults {
+        guard results.allSatisfy({ $0.left.isVariable }) else {
+            if printResults || showingSteps {
                 print("Cannot solve for x")
             }
             return nil
@@ -35,17 +37,23 @@ public extension Expression {
         return solutions
         
     }
+    
     private struct Equation: CustomStringConvertible {
         var left: Expression
-        var right: Expression = .y
+        var right: Expression
         
         var description: String {
-            return "\(left) = \("\(right)".replacingOccurrences(of: "x", with: "y"))"
+            return oneSided ? "\(left) = \("\(right)".replacingOccurrences(of: "x", with: "y"))" : "\(left) = \(right)"
         }
+        
+        private var oneSided: Bool
         
         init(expression: Expression) {
             left = expression
+            right = .y
+            oneSided = true
         }
+        
         mutating func simplify() {
             left.simplify()
             right.simplify()
@@ -55,7 +63,7 @@ public extension Expression {
             simplifiedEquation.simplify()
             return simplifiedEquation
         }
-        
+      
         func isolated(showingSteps: Bool = false) -> [Equation] {
             
             var equations = [Equation]()
@@ -70,6 +78,7 @@ public extension Expression {
             }
             if showingSteps {
                 print(self)
+                
             }
             switch lhs {
                 
@@ -83,11 +92,11 @@ public extension Expression {
             case let .power(a, .multiply(m, .log(b, c))) where !b.containsVariable(),
                  let .power(a, .multiply(.log(b, c), m)) where !b.containsVariable():
                 rhs = .log(b, rhs)
-                lhs = m * .log(b, c) * .log(b, a)
+                lhs = m * (.log(b, c) * .log(b, a))
                 equations.append(equation)
                 
-                // aˣ = y
-                // x is odd:  a = ˣ√y
+            // aˣ = y
+            // x is odd:  a = ˣ√y
             // x is even: a = ±ˣ√y
             case let .power(a, .n(b)):
                 rhs = .root(.n(b), rhs)
@@ -134,21 +143,20 @@ public extension Expression {
                 
                 // a / b = y
             // a = by
-            case let .divide(a, b) where !a.containsVariable():
+            case let .divide(a, b) where !b.containsVariable():
                 rhs *= b
                 lhs = a
                 equations.append(equation)
                 
                 
-                // a / b = y
+            // a / b = y
             // b = a / y
-            case let .divide(a, b) where !b.containsVariable():
+            case let .divide(a, b) where !a.containsVariable():
                 rhs = a / rhs
                 lhs = b
                 equations.append(equation)
                 
-                
-                // a + b = y
+            // a + b = y
             // a = y - b
             case let .add(a, b) where !b.containsVariable(),
                  let .add(b, a) where !b.containsVariable():
@@ -156,14 +164,14 @@ public extension Expression {
                 lhs = a
                 equations.append(equation)
                 
-                // a - b = y
+            // a - b = y
             // b = a - y
             case let .subtract(a, b) where !a.containsVariable():
                 rhs = a - rhs
                 lhs = b
                 equations.append(equation)
                 
-                // a - b = y
+            // a - b = y
             // a = b + y
             case let .subtract(a, b) where !b.containsVariable():
                 rhs = a + rhs
@@ -171,21 +179,24 @@ public extension Expression {
                 equations.append(equation)
                 
             default:
-                let extractedTerm = rhs.extractNonVariableTerms()
+                let extractedTerm = lhs.extractTerms(containingVariables: false)
                 switch extractedTerm {
                 case .none:
                     return [self]
                 case let .singleTerm(a, x: b):
-                    lhs -= a
-                    rhs = b
+                    lhs = b
+                    rhs -= a
                     equations.append(equation)
-                case .allTerms:
-                    fatalError("Impossible")
+                case let .allTerms(a):
+                    lhs -= a
+                    rhs = 0
+                    equations.append(equation)
+
+                    return equations
                 }
             }
             
-            
-            return equations.flatMap { $0.simplified().isolated() }
+            return equations.flatMap { $0.simplified().isolated(showingSteps: showingSteps) }
             
         }
     }

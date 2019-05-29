@@ -48,6 +48,8 @@ extension Expression: CustomStringConvertible, CustomDebugStringConvertible {
                 case (_, .n): return false
                 case (.x, _): return true
                 case (_, .x): return false
+                case (.log, _): return false
+                case (_, .log): return true
                 default: return true
                 }
             }
@@ -61,28 +63,27 @@ extension Expression: CustomStringConvertible, CustomDebugStringConvertible {
                 return chain.map { $0.isLog ? $0._description : "(" + $0._description.strippingOutermostBraces() + ")" }.joined()
             }
             
-//
-//
-//        case let .multiply(.n(a), b),
-//             let .multiply(b, .n(a)) where b.isLog || b.isRoot || b.isVariable:
-//            return "\(a)" + b._description
-//
-//
-//        case let .multiply(a, b):
-//            return "(" + a._description + " * " + b._description + ")"
         case let .divide(a, b):
             return "(" + a._description + " / " + b._description + ")"
         case let .power(a, b):
             return "(" + a._description + " ^ " + b._description + ")"
         case let .log(base, n):
             var nStr = n._description
-            if case .n = n { nStr = "(\(nStr))" }
+            if !(n.isVariable || (n.isNumber && !n.isNegative)) {
+                nStr = "(" + nStr.strippingOutermostBraces() + ")"
+            }
+            
+            if base == 10 {
+                return "log" + nStr
+            }
             if case let .n(a) = base {
+                
                 let subscriptDict: [Character: String] = ["0" : "₀", "1" : "₁", "2" : "₂", "3" : "₃", "4" : "₄", "5" : "₅", "6" : "₆", "7" : "₇", "8" : "₈", "9" : "₉", "-" : "₋"]
                 return "log" + "\(a)".reduce(into: "") { $0 += subscriptDict[$1]! } + nStr
             }
             
-            return "log<" + base._description + ">" + nStr
+            
+            return "log<" + base._description.strippingOutermostBraces() + ">" + nStr
             
         case let .root(n, root):
             var rootStr = root._description
@@ -101,7 +102,7 @@ extension Expression: CustomStringConvertible, CustomDebugStringConvertible {
                     return "\(a)".reduce(into: "") { $0 += superscriptDict[$1]! } + "√" + rootStr
                 }
             }
-            return "root<" + n._description + ">" + rootStr
+            return "root<" + n._description.strippingOutermostBraces() + ">" + rootStr
             
         case let .n(a):
             return "\(a)"
@@ -122,6 +123,7 @@ extension Expression {
         return [a, b].flatMap { $0.multiplicationChain() }
     }
 }
+
 
 
 

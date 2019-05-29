@@ -16,16 +16,17 @@ public extension Expression {
         case none(Expression)
     }
     
-    @discardableResult public func extractNonVariableTerms() -> Extraction {
+    @discardableResult public func extractTerms(containingVariables: Bool) -> Extraction {
         
         switch self {
         case .x:
-            return .none(.x)
+            return containingVariables ? .allTerms(.x) : .none(.x)
         case .n:
-            return .allTerms(self)
+            return containingVariables ? .none(self) : .allTerms(self)
+            
         case let .add(a, b):
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case (.none, .none):
@@ -53,8 +54,8 @@ public extension Expression {
             
             
         case let .subtract(a, b):
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case (.none, .none):
@@ -88,8 +89,8 @@ public extension Expression {
             }
             
         case let .multiply(a, b):
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case (.none, .none):
@@ -119,8 +120,8 @@ public extension Expression {
             }
         case let .divide(a, b):
             
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case (.none, .none):
@@ -152,8 +153,8 @@ public extension Expression {
             }
             
         case let .power(a, b):
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case (.none, .none):
@@ -182,14 +183,27 @@ public extension Expression {
                 return .none((b ^ a1) * (b ^ a2))
                 
             }
+            
+            
         case let .log(a, b):
             
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
+            
             case let (.none(a), .none(b)):
                 return .none(.log(a, b))
+                
+            case let (.allTerms(a), .none(.multiply(b, c))) where (containingVariables ? b.containsVariable() : !b.containsVariable()),
+                 let (.allTerms(a), .none(.multiply(c, b))) where (containingVariables ? b.containsVariable() : !b.containsVariable()):
+                return .singleTerm(.log(a, b), x: .log(a, c))
+                
+            case let (.allTerms(a), .none(.divide(b, c))) where (containingVariables ? b.containsVariable() : !b.containsVariable()):
+                return .singleTerm(.log(a, b), x: 0 - .log(a, c))
+                
+            case let (.allTerms(a), .none(.divide(b, c))) where (containingVariables ? c.containsVariable() : !c.containsVariable()):
+                return .singleTerm(0 - .log(a, c), x: .log(a, b))
                 
             case let (.allTerms(a), .allTerms(b)):
                 return .allTerms(.log(a, b))
@@ -219,8 +233,8 @@ public extension Expression {
             
         case let .root(a, b):
             
-            let extractionA = a.extractNonVariableTerms()
-            let extractionB = b.extractNonVariableTerms()
+            let extractionA = a.extractTerms(containingVariables: containingVariables)
+            let extractionB = b.extractTerms(containingVariables: containingVariables)
             
             switch (extractionA, extractionB) {
             case let (.none(a), .none(b)):

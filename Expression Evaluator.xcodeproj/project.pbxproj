@@ -32,6 +32,8 @@
 		C25562B62228885C0029EDC7 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25562B52228885C0029EDC7 /* Expression.swift */; };
 		C29C907D221CAEBF00C85804 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C907C221CAEBF00C85804 /* main.swift */; };
 		C2B3F3AE2236F07C001F864F /* Term Extraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B3F3AD2236F07C001F864F /* Term Extraction.swift */; };
+		C2B3F3B022371040001F864F /* Replacement Methods.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B3F3AF22371040001F864F /* Replacement Methods.swift */; };
+		C2B3F3B222372E4F001F864F /* ExpressibleByStringLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B3F3B122372E4F001F864F /* ExpressibleByStringLiteral.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -73,6 +75,8 @@
 		C29C9079221CAEBF00C85804 /* Expression Evaluator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Expression Evaluator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C29C907C221CAEBF00C85804 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		C2B3F3AD2236F07C001F864F /* Term Extraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Term Extraction.swift"; sourceTree = "<group>"; };
+		C2B3F3AF22371040001F864F /* Replacement Methods.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Replacement Methods.swift"; sourceTree = "<group>"; };
+		C2B3F3B122372E4F001F864F /* ExpressibleByStringLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressibleByStringLiteral.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +102,7 @@
 				C214DD1F2236A0A5007BDB3D /* Simplification.swift */,
 				C214DD212236A1BF007BDB3D /* Contains Methods.swift */,
 				C2B3F3AD2236F07C001F864F /* Term Extraction.swift */,
+				C2B3F3AF22371040001F864F /* Replacement Methods.swift */,
 			);
 			path = Expression;
 			sourceTree = "<group>";
@@ -108,6 +113,7 @@
 				C214DD242236A229007BDB3D /* Equatable.swift */,
 				C214DD262236A254007BDB3D /* CustomStringConvertible.swift */,
 				C214DD2D2236A318007BDB3D /* ExpressibleByIntegerLiteral.swift */,
+				C2B3F3B122372E4F001F864F /* ExpressibleByStringLiteral.swift */,
 			);
 			path = Conformances;
 			sourceTree = "<group>";
@@ -252,6 +258,7 @@
 				C29C907D221CAEBF00C85804 /* main.swift in Sources */,
 				C214DD1A22369E7E007BDB3D /* Evaluation.swift in Sources */,
 				C214DD222236A1BF007BDB3D /* Contains Methods.swift in Sources */,
+				C2B3F3B222372E4F001F864F /* ExpressibleByStringLiteral.swift in Sources */,
 				C214DD272236A254007BDB3D /* CustomStringConvertible.swift in Sources */,
 				C22F8ABB2224C2FF00F2E358 /* NSTextCheckingResult.swift in Sources */,
 				C214DD252236A229007BDB3D /* Equatable.swift in Sources */,
@@ -271,6 +278,7 @@
 				C23E83D62225F7DC00A52F16 /* Benchmarking.swift in Sources */,
 				C214DD2C2236A28B007BDB3D /* Literal Description.swift in Sources */,
 				C22F8AAA22203EF500F2E358 /* Regex Extensions.swift in Sources */,
+				C2B3F3B022371040001F864F /* Replacement Methods.swift in Sources */,
 				C214DD1E2236A02B007BDB3D /* Operators.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
