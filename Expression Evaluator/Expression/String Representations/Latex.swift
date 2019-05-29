@@ -9,7 +9,7 @@
 import Foundation
 
 public extension Expression {
-    public var latex: String {
+    var latex: String {
         return _latex.strippingOutermostBraces()
     }
     private var _latex: String {

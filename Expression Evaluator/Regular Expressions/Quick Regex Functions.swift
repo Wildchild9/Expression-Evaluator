@@ -9,30 +9,30 @@
 import Foundation
 
 public extension String {
-    public func r(_ s: String...) -> String {
+    func r(_ s: String...) -> String {
         return s.reduce(self, +)
     }
-    public func rEsc(fixCharSets: Bool = true) -> String {
+    func rEsc(fixCharSets: Bool = true) -> String {
         var escapedString = NSRegularExpression.escapedPattern(for: self)
         if fixCharSets {
             escapedString = escapedString.replacingOccurrences(of: "\\\\", with: "\\")
         }
         return escapedString
     }
-    public func rGroup(_ groupType: RegexGroup = .capturing) -> String {
+    func rGroup(_ groupType: RegexGroup = .capturing) -> String {
         return groupType.apply(to: self)
     }
-    public func rOperator() -> String {
-        let op = rEsc
+    func rOperator() -> String {
+        let op = rEsc()
         return ("\\s\(op)\\s|\(op)").rGroup()
     }
-    public func rChars(escaped: Bool = true) -> String {
+    func rChars(escaped: Bool = true) -> String {
         return "[\((escaped ? rEsc() : self))]"
     }
-    public func rBracketed() -> String {
+    func rBracketed() -> String {
         return "\\(\(self)\\)"
     }
-    public func rOr(_ s: String..., group: RegexGroup = .capturing) -> String { return group.apply(to: self + "|" + s.joined(separator: "|")) }
+    func rOr(_ s: String..., group: RegexGroup = .capturing) -> String { return group.apply(to: self + "|" + s.joined(separator: "|")) }
 
 }
 

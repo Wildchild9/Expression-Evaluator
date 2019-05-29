@@ -9,15 +9,15 @@
 import Foundation
 
 public extension String {
-    public static func horizontalLine(ofLength n: Int) -> String {
+    static func horizontalLine(ofLength n: Int) -> String {
         return String(repeating: " ̶", count: n)
     }
     
-    public static var separatorLine: String {
-        return String.horizontalLine(ofLength: 100)
+    static var separatorLine: String {
+        return String.horizontalLine(ofLength: 90)
     }
     
-    @discardableResult public func solve(withX x: Double? = nil, showingSteps: Bool = true, printOverheadLine: Bool = true) -> Expression {
+    @discardableResult func solve(withX x: Double? = nil, showingSteps: Bool = true, printOverheadLine: Bool = true) -> Expression {
         let expression = Expression(self)
         let result = expression.evaluate(withX: x)
         
@@ -34,7 +34,7 @@ public extension String {
     }
     
     
-    public func strippingOutermostBraces() -> String {
+    func strippingOutermostBraces() -> String {
         
         let str = hasPrefix("\\left") ? dropFirst(5) : self[...]
         guard let firstCharacter = str.first else { return self }

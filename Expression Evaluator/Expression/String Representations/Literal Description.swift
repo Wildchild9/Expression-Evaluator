@@ -10,7 +10,7 @@ import Foundation
 
 public extension Expression {
     
-    public var literalDescription: String {
+    var literalDescription: String {
         switch self {
         case let .add(a, b):
             return ".add(" + a.literalDescription + ", " + b.literalDescription + ")"

@@ -76,12 +76,12 @@ exp4.solveForX(showingSteps: true)
 print(String.separatorLine)
 
 let eq5 = "((x + 1) ^ (-1 / 4)) * ((x - 1) ^ (-1 / 2)) + ((x + 1) ^ (3 / 4)) * ((x - 1) ^ (1 / 2))"
-var exp5 = Expression(eq5, simplify: false)
-print(exp5)
-print(exp5.latex)
-exp5.simplify()
-print(exp5)
-print(exp5.latex)
+print(eq5)
+
+let exp5 = Expression(eq5)
+print("=", exp5)
+
+print("\nLatex:\n\(exp5.latex)")
 
 ///////////////////
 print(String.separatorLine)

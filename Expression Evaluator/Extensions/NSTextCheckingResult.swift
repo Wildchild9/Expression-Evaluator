@@ -9,7 +9,7 @@
 import Foundation
 
 public extension Array where Element == NSTextCheckingResult {
-    public func captureGroups(in str: String) -> [(range: Range<String.Index>, captureGroups: [String])] {
+    func captureGroups(in str: String) -> [(range: Range<String.Index>, captureGroups: [String])] {
         var captureGroups = [(range: Range<String.Index>, captureGroups: [String])]()
         captureGroups.reserveCapacity(count)
         

@@ -14,7 +14,7 @@ import Foundation
 //MARK: -  Expression evaluation
 public extension Expression {
     
-    public func evaluate(withX x: Double? = nil) -> Double {
+    func evaluate(withX x: Double? = nil) -> Double {
         return simplified()._evaluate(withX: x)
     }
     

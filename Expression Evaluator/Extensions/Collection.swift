@@ -17,7 +17,7 @@ public extension Collection {
     ///
     /// - Returns: An optional element at the given index. Value is `nil` if the index does not exist, otherwise the element is returned.
     ///
-    public subscript(safe index: Index) -> Element? {
+    subscript(safe index: Index) -> Element? {
         return startIndex <= index && index < endIndex ? self[index] : nil
     }
     

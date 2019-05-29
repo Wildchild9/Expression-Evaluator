@@ -16,7 +16,7 @@ public extension Expression {
         case none(Expression)
     }
     
-    @discardableResult public func extractTerms(containingVariables: Bool) -> Extraction {
+    @discardableResult func extractTerms(containingVariables: Bool) -> Extraction {
         
         switch self {
         case .x:

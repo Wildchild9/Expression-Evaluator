@@ -10,61 +10,61 @@ import Foundation
 
 public extension Expression {
     
-    public var isNumber: Bool {
+    var isNumber: Bool {
         if case .n = self {
             return true
         }
         return false
     }
-    public var isVariable: Bool {
+    var isVariable: Bool {
         if case .x = self {
             return true
         }
         return false
     }
-    public var isAddition: Bool {
+    var isAddition: Bool {
         if case .add = self {
             return true
         }
         return false
     }
-    public var isSubtraction: Bool {
+    var isSubtraction: Bool {
         if case .divide = self {
             return true
         }
         return false
     }
-    public var isDivision: Bool {
+    var isDivision: Bool {
         if case .divide = self {
             return true
         }
         return false
     }
-    public var isMultiplication: Bool {
+    var isMultiplication: Bool {
         if case .multiply = self {
             return true
         }
         return false
     }
-    public var isPower: Bool {
+    var isPower: Bool {
         if case .power = self {
             return true
         }
         return false
     }
-    public var isRoot: Bool {
+    var isRoot: Bool {
         if case .root = self {
             return true
         }
         return false
     }
-    public var isLog: Bool {
+    var isLog: Bool {
         if case .log = self {
             return true
         }
         return false
     }
-    public var isNegative: Bool {
+    var isNegative: Bool {
         if case let .n(a) = self, a < 0 {
             return true
         } else if case .subtract(0, _) = self {
@@ -72,7 +72,7 @@ public extension Expression {
         }
         return false
     }
-    public var operands: (Expression, Expression)? {
+    var operands: (Expression, Expression)? {
         switch self {
         case let .add(a, b),
              let .subtract(a, b),

@@ -10,7 +10,7 @@ import Foundation
 
 public extension Expression {
     
-    public func contains(where predicate: (Expression) -> Bool) -> Bool {
+    func contains(where predicate: (Expression) -> Bool) -> Bool {
         guard !predicate(self) else { return true }
         
         switch self {
@@ -32,7 +32,7 @@ public extension Expression {
             
         }
     }
-    public func contains(_ expression: Expression) -> Bool {
+    func contains(_ expression: Expression) -> Bool {
         guard self != expression else { return true }
         
         switch self {
@@ -54,7 +54,7 @@ public extension Expression {
         }
     }
     
-    public func containsVariable() -> Bool {
+    func containsVariable() -> Bool {
         switch self {
         case .x:
             return true

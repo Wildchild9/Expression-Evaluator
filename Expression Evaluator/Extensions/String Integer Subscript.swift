@@ -10,31 +10,31 @@ import Foundation
 
 
 public extension StringProtocol {
-    public subscript (i: Int) -> Element {
+    subscript (i: Int) -> Element {
         return self[index(startIndex, offsetBy: i)]
     }
-    public subscript (bounds: CountableClosedRange<Int>) -> SubSequence {
+    subscript (bounds: CountableClosedRange<Int>) -> SubSequence {
         let start = index(startIndex, offsetBy: bounds.lowerBound)
         let end = index(startIndex, offsetBy: bounds.upperBound)
         return self[start...end]
     }
     
-    public subscript (bounds: CountableRange<Int>) -> SubSequence {
+    subscript (bounds: CountableRange<Int>) -> SubSequence {
         let start = index(startIndex, offsetBy: bounds.lowerBound)
         let end = index(startIndex, offsetBy: bounds.upperBound)
         return self[start..<end]
     }
     
-    public subscript (bounds: PartialRangeUpTo<Int>) -> SubSequence {
+    subscript (bounds: PartialRangeUpTo<Int>) -> SubSequence {
         let end = index(startIndex, offsetBy: bounds.upperBound)
         return self[startIndex..<end]
         
     }
-    public subscript (bounds: PartialRangeThrough<Int>) -> SubSequence {
+    subscript (bounds: PartialRangeThrough<Int>) -> SubSequence {
         let end = index(startIndex, offsetBy: bounds.upperBound)
         return self[startIndex...end]
     }
-    public subscript (bounds: CountablePartialRangeFrom<Int>) -> SubSequence {
+    subscript (bounds: CountablePartialRangeFrom<Int>) -> SubSequence {
         let start = index(startIndex, offsetBy: bounds.lowerBound)
         return self[start..<endIndex]
     }
@@ -42,7 +42,7 @@ public extension StringProtocol {
 
 
 public extension String {
-    public subscript (i: Int) -> Element {
+    subscript (i: Int) -> Element {
         get {
             return self[index(startIndex, offsetBy: i)]
         }
@@ -51,7 +51,7 @@ public extension String {
             replaceSubrange(idx...idx, with: [newValue])
         }
     }
-    public subscript (bounds: CountableClosedRange<Int>) -> SubSequence {
+    subscript (bounds: CountableClosedRange<Int>) -> SubSequence {
         get {
             let start = index(startIndex, offsetBy: bounds.lowerBound)
             let end = index(startIndex, offsetBy: bounds.upperBound)
@@ -63,7 +63,7 @@ public extension String {
             replaceSubrange(start...end, with: newValue)
         }
     }
-    public subscript (bounds: CountableRange<Int>) -> SubSequence {
+    subscript (bounds: CountableRange<Int>) -> SubSequence {
         get {
             let start = index(startIndex, offsetBy: bounds.lowerBound)
             let end = index(startIndex, offsetBy: bounds.upperBound)
@@ -75,7 +75,7 @@ public extension String {
             replaceSubrange(start..<end, with: newValue)
         }
     }
-    public subscript (bounds: PartialRangeUpTo<Int>) -> SubSequence {
+    subscript (bounds: PartialRangeUpTo<Int>) -> SubSequence {
         get {
             let end = index(startIndex, offsetBy: bounds.upperBound)
             return self[startIndex..<end]
@@ -85,7 +85,7 @@ public extension String {
             replaceSubrange(startIndex..<end, with: newValue)
         }
     }
-    public subscript (bounds: PartialRangeThrough<Int>) -> SubSequence {
+    subscript (bounds: PartialRangeThrough<Int>) -> SubSequence {
         get {
             let end = index(startIndex, offsetBy: bounds.upperBound)
             return self[startIndex...end]
@@ -95,7 +95,7 @@ public extension String {
             replaceSubrange(startIndex...end, with: newValue)
         }
     }
-    public subscript (bounds: CountablePartialRangeFrom<Int>) -> SubSequence {
+    subscript (bounds: CountablePartialRangeFrom<Int>) -> SubSequence {
         get {
             let start = index(startIndex, offsetBy: bounds.lowerBound)
             return self[start..<endIndex]

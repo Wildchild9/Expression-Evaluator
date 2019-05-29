@@ -11,7 +11,7 @@ import Foundation
 public extension Expression {
     
     
-    @discardableResult public func solveForX(printResults: Bool = true, showingSteps: Bool = false) -> [Expression]? {
+    @discardableResult func solveForX(printResults: Bool = true, showingSteps: Bool = false) -> [Expression]? {
         guard containsVariable() else { return nil }
         
         let expression = self.simplified()

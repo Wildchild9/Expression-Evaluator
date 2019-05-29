@@ -9,27 +9,27 @@
 import Foundation
 
 public extension Expression {
-    public func replacingX(with value: Int) -> Expression {
+    func replacingX(with value: Int) -> Expression {
         var replacedExpression = self
         replacedExpression.replaceX(with: value)
         return replacedExpression
     }
-    public func replacingX(with expression: Expression) -> Expression {
+    func replacingX(with expression: Expression) -> Expression {
         var replacedExpression = self
         replacedExpression.replaceX(with: expression)
         return replacedExpression
     }
-    public func replacingOccurrences(of target: Expression, with replacement: Expression) -> Expression {
+    func replacingOccurrences(of target: Expression, with replacement: Expression) -> Expression {
         var replacedExpression = self
         replacedExpression.replaceOccurrences(of: target, with: replacement)
         return replacedExpression
     }
     
     
-    @discardableResult public mutating func replaceX(with value: Int) -> Expression {
+    @discardableResult mutating func replaceX(with value: Int) -> Expression {
         return replaceX(with: .n(value))
     }
-    @discardableResult public mutating func replaceX(with expression: Expression) -> Expression {
+    @discardableResult mutating func replaceX(with expression: Expression) -> Expression {
         switch self {
         case var .add(a, b):
             a = a.replaceX(with: expression)
@@ -65,7 +65,7 @@ public extension Expression {
         return self
     }
 
-    @discardableResult public mutating func replaceOccurrences(of target: Expression, with replacement: Expression) -> Expression {
+    @discardableResult mutating func replaceOccurrences(of target: Expression, with replacement: Expression) -> Expression {
         switch self {
         case target: self = replacement
         case var .add(a, b):

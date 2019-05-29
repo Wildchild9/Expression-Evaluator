@@ -10,7 +10,7 @@ import Foundation
 
 
 public extension StringProtocol {
-    public func leadingCount(where predicate: (Character) throws -> Bool) rethrows -> Int {
+    func leadingCount(where predicate: (Character) throws -> Bool) rethrows -> Int {
         var leadingCount = 0
         for char in self {
             guard try predicate(char) else { return 0 }
@@ -18,7 +18,7 @@ public extension StringProtocol {
         }
         return leadingCount
     }
-    public func leadingCount(of character: Character) -> Int {
+    func leadingCount(of character: Character) -> Int {
         var leadingCount = 0
         for char in self {
             guard char == character else { return 0 }
@@ -26,7 +26,7 @@ public extension StringProtocol {
         }
         return leadingCount
     }
-    public func trailingCount(where predicate: (Character) throws -> Bool) rethrows -> Int {
+    func trailingCount(where predicate: (Character) throws -> Bool) rethrows -> Int {
         var leadingCount = 0
         for char in reversed() {
             guard try predicate(char) else { return 0 }
@@ -34,7 +34,7 @@ public extension StringProtocol {
         }
         return leadingCount
     }
-    public func trailingCount(of character: Character) -> Int {
+    func trailingCount(of character: Character) -> Int {
         var leadingCount = 0
         for char in reversed() {
             guard char == character else { return 0 }
@@ -46,13 +46,13 @@ public extension StringProtocol {
 
 
 public extension StringProtocol where Index == String.Index {
-    public func index(of string: Self, options: String.CompareOptions = []) -> Index? {
+    func index(of string: Self, options: String.CompareOptions = []) -> Index? {
         return range(of: string, options: options)?.lowerBound
     }
-    public func endIndex(of string: Self, options: String.CompareOptions = []) -> Index? {
+    func endIndex(of string: Self, options: String.CompareOptions = []) -> Index? {
         return range(of: string, options: options)?.upperBound
     }
-    public func indices(of string: Self, options: String.CompareOptions = []) -> [Index] {
+    func indices(of string: Self, options: String.CompareOptions = []) -> [Index] {
         var result: [Index] = []
         var start = startIndex
         while start < endIndex,
@@ -63,7 +63,7 @@ public extension StringProtocol where Index == String.Index {
         }
         return result
     }
-    public func ranges(of string: Self, options: String.CompareOptions = []) -> [Range<Index>] {
+    func ranges(of string: Self, options: String.CompareOptions = []) -> [Range<Index>] {
         var result: [Range<Index>] = []
         var start = startIndex
         while start < endIndex,
@@ -75,10 +75,10 @@ public extension StringProtocol where Index == String.Index {
         return result
     }
     
-    public var nsRange: NSRange {
+    var nsRange: NSRange {
         return NSRange(startIndex..<endIndex, in: self)
     }
-    public var range: Range<String.Index> {
+    var range: Range<String.Index> {
         return startIndex..<endIndex
     }
 }

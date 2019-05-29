@@ -13,7 +13,7 @@ public protocol RegexExtensible: StringProtocol {
     var regex: T { get }
 }
 public extension RegexExtensible {
-    public var regex: Regex<Self> {
+    var regex: Regex<Self> {
         get {
             return Regex(base: self)
         }
@@ -29,9 +29,9 @@ extension String: RegexExtensible { }
 extension String.SubSequence: RegexExtensible { }
 
 
-public extension Regex where Base: StringProtocol, Base.Index == String.Index {
+public extension Regex where Base: StringProtocol {
     
-    public func replacing<Target: StringProtocol, Replacement: StringProtocol>(pattern target: Target, with replacement: Replacement, caseInsensitive: Bool = false) -> String {
+    func replacing<Target: StringProtocol, Replacement: StringProtocol>(pattern target: Target, with replacement: Replacement, caseInsensitive: Bool = false) -> String {
         
         let str = base
         
@@ -41,16 +41,16 @@ public extension Regex where Base: StringProtocol, Base.Index == String.Index {
         return str.replacingOccurrences(of: target, with: replacement, options: replacementOptions)
     }
     
-    public func  doesMatch<Target: StringProtocol>(pattern regex: Target) -> Bool {
+    func  doesMatch<Target: StringProtocol>(pattern regex: Target) -> Bool {
         let str = base
 
         return str.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
     }
-    public func matches<Target: StringProtocol>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = []) -> [Substring] {
+    func matches<Target: StringProtocol>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = []) -> [Substring] {
         return matches(pattern: regex, options: options, in: base.startIndex..<base.endIndex)
     }
     
-    public func matches<Target: StringProtocol, Region: RangeExpression>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = [], in region: Region) -> [Substring] where Region.Bound == Base.Index {
+    func matches<Target: StringProtocol, Region: RangeExpression>(pattern regex: Target, options: NSRegularExpression.MatchingOptions = [], in region: Region) -> [Substring] where Region.Bound == Base.Index {
         
         let s = String(base)
         
@@ -67,7 +67,7 @@ public extension Regex where Base: StringProtocol, Base.Index == String.Index {
         }
     }
     
-    public func numberOfMatches<Target: StringProtocol>(with pattern: Target) -> Int {
+    func numberOfMatches<Target: StringProtocol>(with pattern: Target) -> Int {
         let s = String(base)
         
         do {
@@ -83,7 +83,7 @@ public extension Regex where Base: StringProtocol, Base.Index == String.Index {
 
 public extension Regex where Base == String {
     
-    public func replacing<Target: StringProtocol, Replacement: StringProtocol>(pattern target: Target, options: NSRegularExpression.Options = [], with replacement: (_ match: Substring, _ captureGroups: [Substring]) -> Replacement) -> String {
+    func replacing<Target: StringProtocol, Replacement: StringProtocol>(pattern target: Target, options: NSRegularExpression.Options = [], with replacement: (_ match: Substring, _ captureGroups: [Substring]) -> Replacement) -> String {
         
         var str = base
         
@@ -116,15 +116,15 @@ public extension Regex where Base == String {
 }
 
 public extension NSTextCheckingResult {
-    public func range(in str: String) -> Range<String.Index> {
+    func range(in str: String) -> Range<String.Index> {
         return Range(range, in: str)!
     }
     
-    public func matchedString(in str: String) -> Substring {
+    func matchedString(in str: String) -> Substring {
         return str[range(in: str)]
     }
     
-    public func captureGroups(in str: String) -> [Substring] {
+    func captureGroups(in str: String) -> [Substring] {
         var captures = [Substring]()
         for captureGroupNumber in 1..<numberOfRanges where range(at: captureGroupNumber).lowerBound != NSNotFound {
             let captureGroupRange = range(at: captureGroupNumber)
@@ -135,7 +135,7 @@ public extension NSTextCheckingResult {
     
 }
 public extension NSRange {
-    public func range(in str: String) -> Range<String.Index> {
+    func range(in str: String) -> Range<String.Index> {
         return Range(self, in: str)!
     }
 }

@@ -16,7 +16,9 @@ public extension Expression {
     
     mutating func simplify() {
         _simplify()
+        print(self)
         removeDifferenceOfSquares()
+        print(self)
         _simplify()
         addSquareRoots()
     }
@@ -1094,8 +1096,10 @@ public extension Expression {
             
             switch (lhs, rhs) {
             case let (.add(a, b), .subtract(c, d)) where a == c && b == d,
-                 let (.subtract(c, d), .add(a, b)) where a == c && b == d:
-                self = (a ^ 2) - (c ^ 2)
+                 let (.add(b, a), .subtract(c, d)) where a == c && b == d,
+                 let (.subtract(c, d), .add(a, b)) where a == c && b == d,
+                 let (.subtract(c, d), .add(b, a)) where a == c && b == d:
+                self = (a ^ 2) - (b ^ 2)
                 _simplify()
                 return
                 
@@ -1190,7 +1194,7 @@ public extension Expression {
 //MARK: - Nonmutating Simplification
 public extension Expression {
     
-    public func simplified() -> Expression {
+    func simplified() -> Expression {
         var simplifiedExpression = self
         simplifiedExpression.simplify()
         return simplifiedExpression
